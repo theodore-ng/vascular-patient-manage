@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Send, Bot, User, Loader2, Stethoscope, ChevronDown } from 'lucide-react'
+import { Send, Bot, User, Loader2, Stethoscope, ChevronDown, ChevronUp } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions'
@@ -28,13 +28,14 @@ function getApiKey() {
 
 function buildPatientContext(patient) {
   if (!patient) return ''
-  return `\n\nActive patient context:\n- Name: ${patient.name}\n- Age: ${patient.age ?? '—'}\n- Clinical Manifestation: ${patient.clinicalManifestation}\n- Underlying Disease: ${patient.underlyingDisease}\n- Imaging Diagnosis: ${patient.imagingDiagnosis}`
+  return `\n\nActive patient context:\n- Name: ${patient.name}\n- Age: ${patient.age ?? '—'}\n- Clinical Presentation: ${patient.clinicalManifestation}\n- Comorbidities: ${patient.underlyingDisease}\n- Imaging Findings: ${patient.imagingDiagnosis}`
 }
 
 export default function ConsultPanel({ selectedPatient }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [collapsed, setCollapsed] = useState(false)
   const chatEndRef = useRef(null)
   const textareaRef = useRef(null)
   const prevPatientId = useRef(null)
@@ -126,9 +127,9 @@ export default function ConsultPanel({ selectedPatient }) {
   }
 
   return (
-    <section className="consult-panel glass-panel">
+    <section className={`consult-panel glass-panel ${collapsed ? 'consult-panel--collapsed' : ''}`}>
       {/* Header */}
-      <div className="consult-header">
+      <div className="consult-header" onClick={() => setCollapsed(v => !v)} style={{ cursor: 'pointer' }}>
         <div className="consult-header-left">
           <div className="consult-icon">
             <Stethoscope size={16} />
@@ -142,11 +143,16 @@ export default function ConsultPanel({ selectedPatient }) {
             </p>
           </div>
         </div>
-        <span className="consult-model-badge">Llama 3.3 70B</span>
+        <div className="consult-header-right">
+          <span className="consult-model-badge">Llama 3.3 70B</span>
+          <button className="consult-collapse-btn" onClick={e => { e.stopPropagation(); setCollapsed(v => !v) }}>
+            {collapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+          </button>
+        </div>
       </div>
 
-      {/* Messages */}
-      <div className="consult-messages">
+      {/* Messages + Input — hidden when collapsed */}
+      {!collapsed && <div className="consult-messages">
         {messages.length === 0 && (
           <div className="consult-empty">
             <Bot size={36} strokeWidth={1} />
@@ -203,10 +209,9 @@ export default function ConsultPanel({ selectedPatient }) {
         )}
 
         <div ref={chatEndRef} />
-      </div>
+      </div>}
 
-      {/* Input */}
-      <div className="consult-input-area">
+      {!collapsed && <div className="consult-input-area">
         <textarea
           ref={textareaRef}
           className="consult-textarea"
@@ -226,7 +231,7 @@ export default function ConsultPanel({ selectedPatient }) {
         >
           {loading ? <Loader2 size={16} className="spin" /> : <Send size={16} />}
         </button>
-      </div>
+      </div>}
     </section>
   )
 }

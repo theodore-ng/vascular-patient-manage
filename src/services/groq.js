@@ -25,9 +25,9 @@ export async function parsePatientTranscript(transcript) {
 Extract the following fields from the voice transcript and return ONLY a valid JSON object with these exact keys:
 - name: patient's full name (string)
 - age: patient's age as a number (integer)
-- clinicalManifestation: clinical symptoms and signs described (string)
-- underlyingDisease: underlying or comorbid conditions (string)
-- imagingDiagnosis: imaging/diagnostic findings mentioned (string)
+- clinicalManifestation: clinical presentation — symptoms and signs described (string)
+- underlyingDisease: comorbidities — pre-existing or concurrent conditions (string)
+- imagingDiagnosis: imaging findings — radiological or diagnostic findings mentioned (string)
 
 If a field is not mentioned, use null.
 Return ONLY the JSON object, no markdown, no explanation.`,

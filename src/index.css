@@ -707,6 +707,11 @@ body {
   /* override glass-panel */
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
+  transition: height .25s ease;
+}
+
+.consult-panel--collapsed {
+  height: auto;
 }
 
 .consult-header {
@@ -716,12 +721,44 @@ body {
   padding: 16px 18px;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+  user-select: none;
+}
+
+.consult-panel--collapsed .consult-header {
+  border-bottom: none;
 }
 
 .consult-header-left {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.consult-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.consult-collapse-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+  flex-shrink: 0;
+}
+
+.consult-collapse-btn:hover {
+  background: var(--primary-light);
+  color: var(--primary);
+  border-color: rgba(37,99,235,.2);
 }
 
 .consult-icon {
@@ -1425,9 +1462,17 @@ body {
     border-top: 1px solid var(--border);
   }
 
+  .consult-panel--collapsed {
+    height: auto;
+  }
+
   .fab-group {
     right: 20px;
     bottom: calc(50dvh + 20px);
+  }
+
+  .app-root:has(.consult-panel--collapsed) .fab-group {
+    bottom: 20px;
   }
 }
 

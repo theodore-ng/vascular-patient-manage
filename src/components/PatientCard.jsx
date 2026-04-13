@@ -234,21 +234,21 @@ export default function PatientCard({
               <div className="card-field">
                 <span className="field-icon"><Activity size={14} /></span>
                 <div className="field-content">
-                  <span className="field-label">Clinical Manifestation</span>
+                  <span className="field-label">Clinical Presentation</span>
                   <span className="field-value">{patient.clinicalManifestation || '—'}</span>
                 </div>
               </div>
               <div className="card-field">
                 <span className="field-icon"><Heart size={14} /></span>
                 <div className="field-content">
-                  <span className="field-label">Underlying Disease</span>
+                  <span className="field-label">Comorbidities</span>
                   <span className="field-value">{patient.underlyingDisease || '—'}</span>
                 </div>
               </div>
               <div className="card-field">
                 <span className="field-icon"><Scan size={14} /></span>
                 <div className="field-content">
-                  <span className="field-label">Imaging Diagnosis</span>
+                  <span className="field-label">Imaging Findings</span>
                   <span className="field-value">{patient.imagingDiagnosis || '—'}</span>
                 </div>
               </div>

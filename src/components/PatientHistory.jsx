@@ -4,7 +4,7 @@ import { Clock, User, Activity, Heart, Scan, ChevronDown, ChevronUp, RotateCcw }
 function formatDate(iso) {
   if (!iso) return '—'
   const d = new Date(iso)
-  return d.toLocaleString('vi-VN', {
+  return d.toLocaleString('en-GB', {
     day: '2-digit', month: '2-digit', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   })
@@ -53,21 +53,21 @@ function HistoryCard({ patient, onRestore }) {
           <div className="card-field">
             <span className="field-icon"><Activity size={13} /></span>
             <div className="field-content">
-              <span className="field-label">Clinical Manifestation</span>
+              <span className="field-label">Clinical Presentation</span>
               <span className="field-value">{patient.clinicalManifestation || '—'}</span>
             </div>
           </div>
           <div className="card-field">
             <span className="field-icon"><Heart size={13} /></span>
             <div className="field-content">
-              <span className="field-label">Underlying Disease</span>
+              <span className="field-label">Comorbidities</span>
               <span className="field-value">{patient.underlyingDisease || '—'}</span>
             </div>
           </div>
           <div className="card-field">
             <span className="field-icon"><Scan size={13} /></span>
             <div className="field-content">
-              <span className="field-label">Imaging Diagnosis</span>
+              <span className="field-label">Imaging Findings</span>
               <span className="field-value">{patient.imagingDiagnosis || '—'}</span>
             </div>
           </div>

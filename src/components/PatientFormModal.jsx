@@ -78,7 +78,7 @@ export default function PatientFormModal({ patient, onSubmit, onClose }) {
           </div>
 
           <div className="pf-field">
-            <label className="pf-label">Clinical Manifestation</label>
+            <label className="pf-label">Clinical Presentation</label>
             <textarea
               className="pf-textarea"
               placeholder="Symptoms and signs…"
@@ -89,10 +89,10 @@ export default function PatientFormModal({ patient, onSubmit, onClose }) {
           </div>
 
           <div className="pf-field">
-            <label className="pf-label">Underlying Disease</label>
+            <label className="pf-label">Comorbidities</label>
             <textarea
               className="pf-textarea"
-              placeholder="Comorbidities…"
+              placeholder="Pre-existing conditions…"
               value={fields.underlyingDisease}
               onChange={e => set('underlyingDisease', e.target.value)}
               rows={2}
@@ -100,10 +100,10 @@ export default function PatientFormModal({ patient, onSubmit, onClose }) {
           </div>
 
           <div className="pf-field">
-            <label className="pf-label">Imaging Diagnosis</label>
+            <label className="pf-label">Imaging Findings</label>
             <textarea
               className="pf-textarea"
-              placeholder="Imaging findings…"
+              placeholder="Radiological findings…"
               value={fields.imagingDiagnosis}
               onChange={e => set('imagingDiagnosis', e.target.value)}
               rows={2}
