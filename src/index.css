@@ -1437,6 +1437,11 @@ body {
 }
 
 @media (max-width: 720px) {
+  /* Prevent iOS Safari from zooming on input focus */
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+
   .app-root {
     grid-template-columns: 1fr;
     grid-template-rows: auto 1fr auto;
