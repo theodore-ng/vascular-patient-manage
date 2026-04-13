@@ -4,23 +4,27 @@ import { CSS } from '@dnd-kit/utilities'
 import {
   GripVertical, User, Activity, Heart, Scan,
   Trash2, ChevronDown, ChevronUp, Mic, MicOff, Loader2, Pencil,
-  LogOut, Archive, Tag, CheckSquare, FileText, X, Check,
+  LogOut, Archive, Tag, Layers, FileText, X, Check,
 } from 'lucide-react'
 import { useSwipeRemove } from '../hooks/useSwipeRemove'
 import { parsePatientTranscript } from '../services/groq'
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
 
-const TAG_COLORS = [null, 'red', 'orange', 'green', 'blue']
+const TAG_COLORS = ['red', 'yellow', 'green']
 
 export default function PatientCard({
   patient, index, selected,
-  onSelect, onDischarge, onDelete, onUpdate, onEdit, onTag, onToggleTodo, onNote,
+  onSelect, onDischarge, onDelete, onUpdate, onEdit, onTag, onSetGroup, onNote,
+  groups, onAddGroup,
 }) {
-  const [expanded, setExpanded]     = useState(false)
-  const [voiceState, setVoiceState] = useState('idle')
-  const [noteOpen, setNoteOpen]     = useState(false)
-  const [noteText, setNoteText]     = useState(patient.note || '')
+  const [expanded, setExpanded]         = useState(false)
+  const [voiceState, setVoiceState]     = useState('idle')
+  const [noteOpen, setNoteOpen]         = useState(false)
+  const [noteText, setNoteText]         = useState(patient.note || '')
+  const [tagPickerOpen, setTagPickerOpen]     = useState(false)
+  const [groupPickerOpen, setGroupPickerOpen] = useState(false)
+  const [groupInput, setGroupInput]           = useState('')
   const transcriptRef  = useRef('')
   const recognitionRef = useRef(null)
 
@@ -35,11 +39,7 @@ export default function PatientCard({
   const sortableStyle = { transform: CSS.Transform.toString(transform), transition }
 
   const cardStyle = (translateX !== 0)
-    ? {
-        transform: `translateX(${translateX}px)`,
-        transition: 'none',
-        zIndex: 2,
-      }
+    ? { transform: `translateX(${translateX}px)`, transition: 'none', zIndex: 2 }
     : { transition: 'transform 0.25s ease', zIndex: 2 }
 
   /* ── Voice update ─────────────────────────────────────── */
@@ -93,11 +93,8 @@ export default function PatientCard({
 
   const toggleExpand = useCallback((e) => { e.stopPropagation(); setExpanded(v => !v) }, [])
 
-  /* ── Swipe action handlers ────────────────────────────── */
-  function act(fn) {
-    close()
-    fn()
-  }
+  /* ── Swipe action helpers ─────────────────────────────── */
+  function act(fn) { close(); fn() }
 
   const voiceBtnClass = voiceState === 'listening'
     ? 'card-voice-update-btn card-voice-update-btn--listening'
@@ -105,7 +102,23 @@ export default function PatientCard({
       ? 'card-voice-update-btn card-voice-update-btn--processing'
       : 'card-voice-update-btn'
 
-  const tagColor = patient.tag || null
+  /* ── Group picker actions ─────────────────────────────── */
+  function assignGroup(g) {
+    onSetGroup(patient.id, patient.group === g ? null : g)
+    setGroupPickerOpen(false)
+  }
+
+  function submitNewGroup() {
+    const name = groupInput.trim()
+    if (!name) return
+    onAddGroup(name)
+    onSetGroup(patient.id, name)
+    setGroupInput('')
+    setGroupPickerOpen(false)
+  }
+
+  const tagColor   = patient.tag   || null
+  const groupLabel = patient.group || null
 
   return (
     <div
@@ -113,57 +126,33 @@ export default function PatientCard({
       style={sortableStyle}
       className={`patient-card-wrapper ${isDragging ? 'dragging' : ''} ${selected ? 'selected' : ''}`}
     >
-      {/* ── Left action panel (revealed by right swipe →) ── */}
+      {/* ── Left action panel (right swipe →) ── */}
       <div className={`swipe-actions-left ${openSide === 'right' ? 'swipe-actions--visible' : ''}`}>
-        <button
-          className="swipe-action-btn swipe-action-btn--discharge"
-          onClick={() => act(() => onDischarge(patient.id))}
-        >
-          <LogOut size={18} />
-          <span>Discharge</span>
+        <button className="swipe-action-btn swipe-action-btn--discharge" onClick={() => act(() => onDischarge(patient.id))}>
+          <LogOut size={18} /><span>Discharge</span>
         </button>
-        <button
-          className="swipe-action-btn swipe-action-btn--archive"
-          onClick={() => act(() => onDischarge(patient.id))}
-        >
-          <Archive size={18} />
-          <span>Archive</span>
+        <button className="swipe-action-btn swipe-action-btn--archive" onClick={() => act(() => onDischarge(patient.id))}>
+          <Archive size={18} /><span>Archive</span>
         </button>
-        <button
-          className="swipe-action-btn swipe-action-btn--delete"
-          onClick={() => act(() => onDelete(patient.id))}
-        >
-          <Trash2 size={18} />
-          <span>Remove</span>
+        <button className="swipe-action-btn swipe-action-btn--delete" onClick={() => act(() => onDelete(patient.id))}>
+          <Trash2 size={18} /><span>Remove</span>
         </button>
       </div>
 
-      {/* ── Right action panel (revealed by left swipe ←) ── */}
+      {/* ── Right action panel (left swipe ←) ── */}
       <div className={`swipe-actions-right ${openSide === 'left' ? 'swipe-actions--visible' : ''}`}>
-        <button
-          className="swipe-action-btn swipe-action-btn--tag"
-          onClick={() => act(() => onTag(patient.id))}
-        >
-          <Tag size={18} />
-          <span>Tag</span>
+        <button className="swipe-action-btn swipe-action-btn--tag" onClick={() => act(() => setTagPickerOpen(true))}>
+          <Tag size={18} /><span>Tag</span>
         </button>
-        <button
-          className="swipe-action-btn swipe-action-btn--todo"
-          onClick={() => act(() => onToggleTodo(patient.id))}
-        >
-          <CheckSquare size={18} />
-          <span>To-do</span>
+        <button className="swipe-action-btn swipe-action-btn--group" onClick={() => act(() => setGroupPickerOpen(true))}>
+          <Layers size={18} /><span>Group</span>
         </button>
-        <button
-          className="swipe-action-btn swipe-action-btn--note"
-          onClick={() => act(() => { setNoteOpen(true); setNoteText(patient.note || '') })}
-        >
-          <FileText size={18} />
-          <span>Note</span>
+        <button className="swipe-action-btn swipe-action-btn--note" onClick={() => act(() => { setNoteOpen(true); setNoteText(patient.note || '') })}>
+          <FileText size={18} /><span>Note</span>
         </button>
       </div>
 
-      {/* ── The actual sliding card ────────────────────────── */}
+      {/* ── The actual sliding card ───────────── */}
       <div
         ref={swipeRef}
         className={`patient-card glass-panel ${selected ? 'patient-card--selected' : ''} ${tagColor ? `patient-card--tag-${tagColor}` : ''}`}
@@ -187,7 +176,7 @@ export default function PatientCard({
             <div className="patient-name-block">
               <h3 className="patient-name">
                 {patient.name}
-                {patient.hasTodo && <span className="card-todo-badge"><CheckSquare size={11} /> To-do</span>}
+                {groupLabel && <span className="card-group-badge">{groupLabel}</span>}
               </h3>
               {patient.age !== null && (
                 <span className="patient-age">{patient.age} years old</span>
@@ -204,6 +193,67 @@ export default function PatientCard({
             </div>
           )}
 
+          {/* Inline tag color picker */}
+          {tagPickerOpen && (
+            <div className="card-tag-picker" onClick={e => e.stopPropagation()}>
+              {TAG_COLORS.map(c => (
+                <button
+                  key={c}
+                  className={`tag-pick-dot tag-pick-dot--${c} ${patient.tag === c ? 'tag-pick-dot--active' : ''}`}
+                  onClick={() => { onTag(patient.id, patient.tag === c ? null : c); setTagPickerOpen(false) }}
+                  title={c}
+                />
+              ))}
+              <button
+                className="tag-pick-dot tag-pick-dot--clear"
+                onClick={() => { onTag(patient.id, null); setTagPickerOpen(false) }}
+                title="Clear tag"
+              >
+                <X size={10} />
+              </button>
+            </div>
+          )}
+
+          {/* Inline group picker */}
+          {groupPickerOpen && (
+            <div className="card-group-picker" onClick={e => e.stopPropagation()}>
+              {groups.length > 0 && (
+                <div className="group-chips">
+                  {groups.map(g => (
+                    <button
+                      key={g}
+                      className={`group-chip ${patient.group === g ? 'group-chip--active' : ''}`}
+                      onClick={() => assignGroup(g)}
+                    >
+                      {g}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div className="group-input-row">
+                <input
+                  className="group-input"
+                  value={groupInput}
+                  onChange={e => setGroupInput(e.target.value)}
+                  placeholder="New group…"
+                  onKeyDown={e => { if (e.key === 'Enter') submitNewGroup() }}
+                  autoFocus
+                />
+                <button className="group-input-add" disabled={!groupInput.trim()} onClick={submitNewGroup}>
+                  Add
+                </button>
+              </div>
+              {patient.group && (
+                <button className="group-clear-btn" onClick={() => { onSetGroup(patient.id, null); setGroupPickerOpen(false) }}>
+                  Clear group
+                </button>
+              )}
+              <button className="group-close-btn" onClick={() => setGroupPickerOpen(false)}>
+                <X size={12} /> Close
+              </button>
+            </div>
+          )}
+
           {/* Inline note editor */}
           {noteOpen && (
             <div className="card-note-editor" onClick={e => e.stopPropagation()}>
@@ -216,10 +266,7 @@ export default function PatientCard({
                 autoFocus
               />
               <div className="card-note-actions">
-                <button className="card-note-save" onClick={() => {
-                  onNote(patient.id, noteText.trim())
-                  setNoteOpen(false)
-                }}>
+                <button className="card-note-save" onClick={() => { onNote(patient.id, noteText.trim()); setNoteOpen(false) }}>
                   <Check size={13} /> Save
                 </button>
                 <button className="card-note-cancel" onClick={() => setNoteOpen(false)}>
@@ -263,11 +310,7 @@ export default function PatientCard({
               {expanded ? 'Less' : 'Details'}
             </button>
 
-            <button
-              className="card-edit-btn"
-              onClick={e => { e.stopPropagation(); onEdit(patient) }}
-              title="Edit patient"
-            >
+            <button className="card-edit-btn" onClick={e => { e.stopPropagation(); onEdit(patient) }} title="Edit patient">
               <Pencil size={12} /> Edit
             </button>
 

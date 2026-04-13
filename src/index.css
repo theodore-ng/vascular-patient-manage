@@ -412,7 +412,7 @@ body {
 .swipe-action-btn--archive   { background: #7c3aed; }
 .swipe-action-btn--delete    { background: #ef4444; }
 .swipe-action-btn--tag       { background: #f59e0b; }
-.swipe-action-btn--todo      { background: #10b981; }
+.swipe-action-btn--group     { background: #10b981; }
 .swipe-action-btn--note      { background: #0ea5e9; }
 
 .patient-card {
@@ -1485,31 +1485,163 @@ body {
   margin-left: auto;
 }
 .card-tag-dot--red    { background: #ef4444; }
-.card-tag-dot--orange { background: #f97316; }
+.card-tag-dot--yellow { background: #eab308; }
 .card-tag-dot--green  { background: #10b981; }
-.card-tag-dot--blue   { background: #3b82f6; }
 
 /* ── Tag left border on card ─────────────────────────────────────── */
 .patient-card--tag-red    { border-left: 3px solid #ef4444; }
-.patient-card--tag-orange { border-left: 3px solid #f97316; }
+.patient-card--tag-yellow { border-left: 3px solid #eab308; }
 .patient-card--tag-green  { border-left: 3px solid #10b981; }
-.patient-card--tag-blue   { border-left: 3px solid #3b82f6; }
 
-/* ── To-do badge ──────────────────────────────────────────────────── */
-.card-todo-badge {
+/* ── Inline tag color picker ─────────────────────────────────────── */
+.card-tag-picker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.tag-pick-dot {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform .12s, border-color .12s;
+  flex-shrink: 0;
+}
+.tag-pick-dot:hover { transform: scale(1.15); }
+.tag-pick-dot--red    { background: #ef4444; }
+.tag-pick-dot--yellow { background: #eab308; }
+.tag-pick-dot--green  { background: #10b981; }
+.tag-pick-dot--clear  { background: #f1f5f9; border-color: var(--border-strong); color: var(--text-muted); }
+.tag-pick-dot--active { border-color: var(--text-primary); transform: scale(1.15); }
+
+/* ── Group badge on card ──────────────────────────────────────────── */
+.card-group-badge {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  background: #ecfdf5;
-  color: #059669;
-  border: 1px solid #a7f3d0;
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
   border-radius: 99px;
-  font-size: 0.65rem;
+  font-size: 0.62rem;
   font-weight: 600;
-  padding: 1px 6px;
+  padding: 1px 7px;
   margin-left: 6px;
   vertical-align: middle;
+  letter-spacing: .02em;
 }
+
+/* ── Inline group picker ──────────────────────────────────────────── */
+.card-group-picker {
+  margin-top: 8px;
+  padding: 10px;
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.group-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.group-chip {
+  padding: 3px 10px;
+  border-radius: 99px;
+  border: 1px solid var(--border-strong);
+  background: #fff;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .12s;
+}
+.group-chip:hover { border-color: var(--primary); color: var(--primary); }
+.group-chip--active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.group-input-row {
+  display: flex;
+  gap: 6px;
+}
+.group-input {
+  flex: 1;
+  padding: 5px 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  font-size: 0.78rem;
+  outline: none;
+  background: #fff;
+}
+.group-input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-ring); }
+.group-input-add {
+  padding: 5px 12px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s;
+}
+.group-input-add:hover { background: var(--primary-hover); }
+.group-input-add:disabled { opacity: .45; cursor: default; }
+.group-clear-btn {
+  font-size: 0.7rem;
+  color: var(--accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+}
+.group-close-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin-top: -2px;
+}
+
+/* ── Group filter chips (top of queue) ───────────────────────────── */
+.patient-queue-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+.group-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 16px 0;
+  flex-shrink: 0;
+}
+.group-filter-chip {
+  padding: 4px 12px;
+  border-radius: 99px;
+  border: 1px solid var(--border-strong);
+  background: #fff;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .12s;
+}
+.group-filter-chip:hover { border-color: var(--primary); color: var(--primary); }
+.group-filter-chip--active { background: var(--primary); color: #fff; border-color: var(--primary); }
 
 /* ── Note snippet ─────────────────────────────────────────────────── */
 .card-note-snippet {

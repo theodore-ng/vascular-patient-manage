@@ -22,6 +22,11 @@ function App() {
   const [showKey, setShowKey] = useState(false)
   const [savedMsg, setSavedMsg] = useState(false)
   const [patientForm, setPatientForm] = useState(null) // null | { mode: 'add' } | { mode: 'edit', patient }
+  const [groups, setGroups] = useState(() => {
+    const stored = localStorage.getItem('vascular_groups')
+    return stored ? JSON.parse(stored) : []
+  })
+  const [activeGroupFilter, setActiveGroupFilter] = useState(null)
 
   useEffect(() => {
     if (SUPABASE_ENABLED) {
@@ -131,19 +136,23 @@ function App() {
     })
   }, [])
 
-  const tagPatient = useCallback((id) => {
-    const TAG_CYCLE = [null, 'red', 'orange', 'green', 'blue']
-    setPatients(prev => prev.map(p => {
-      if (p.id !== id) return p
-      const idx = TAG_CYCLE.indexOf(p.tag ?? null)
-      return { ...p, tag: TAG_CYCLE[(idx + 1) % TAG_CYCLE.length] }
-    }))
+  const tagPatient = useCallback((id, color) => {
+    setPatients(prev => prev.map(p => p.id === id ? { ...p, tag: color } : p))
   }, [])
 
-  const toggleTodoPatient = useCallback((id) => {
-    setPatients(prev => prev.map(p =>
-      p.id === id ? { ...p, hasTodo: !p.hasTodo } : p
-    ))
+  const setPatientGroup = useCallback((id, group) => {
+    setPatients(prev => prev.map(p => p.id === id ? { ...p, group } : p))
+  }, [])
+
+  const addGroup = useCallback((name) => {
+    const trimmed = name.trim()
+    if (!trimmed) return
+    setGroups(prev => {
+      if (prev.includes(trimmed)) return prev
+      const next = [...prev, trimmed]
+      localStorage.setItem('vascular_groups', JSON.stringify(next))
+      return next
+    })
   }, [])
 
   const notePatient = useCallback((id, note) => {
@@ -229,23 +238,6 @@ function App() {
 
       {/* Center — Queue or History */}
       <div className="center-col">
-        <div className="center-col-header">
-          <div>
-            <h2 className="center-col-title">
-              {isQueue ? 'Patient List' : 'History'}
-            </h2>
-            {!isQueue && (
-              <p className="center-col-sub">
-                {history.length} discharged patient{history.length !== 1 ? 's' : ''}
-              </p>
-            )}
-          </div>
-          <div className="queue-count-badge">
-            <span className="queue-count-num">{isQueue ? patients.length : history.length}</span>
-            <span className="queue-count-label">{isQueue ? 'in queue' : 'total'}</span>
-          </div>
-        </div>
-
         {loading ? (
           <div className="loading-state">
             <div className="spinner" />
@@ -268,8 +260,12 @@ function App() {
             onUpdate={updatePatient}
             onEdit={(patient) => setPatientForm({ mode: 'edit', patient })}
             onTag={tagPatient}
-            onToggleTodo={toggleTodoPatient}
+            onSetGroup={setPatientGroup}
             onNote={notePatient}
+            groups={groups}
+            onAddGroup={addGroup}
+            activeGroupFilter={activeGroupFilter}
+            onFilterChange={setActiveGroupFilter}
           />
         ) : (
           <PatientHistory
