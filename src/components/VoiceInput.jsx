@@ -22,6 +22,15 @@ export default function VoiceInput({ onPatientParsed }) {
     setStatus('processing')
     try {
       const patient = await parsePatientTranscript(text)
+      // Guard: don't create a patient if no meaningful data was extracted
+      const hasData = patient.name !== '—' || patient.age !== null ||
+        patient.clinicalManifestation !== '—' || patient.underlyingDisease !== '—' ||
+        patient.imagingDiagnosis !== '—'
+      if (!hasData) {
+        setErrorMsg('Could not extract patient data. Please try again.')
+        setStatus('error')
+        return
+      }
       onPatientParsedRef.current(patient)
       transcriptRef.current = ''
       setStatus('idle')

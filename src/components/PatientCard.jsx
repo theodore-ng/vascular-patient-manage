@@ -76,6 +76,7 @@ export default function PatientCard({
         if (parsed.clinicalManifestation && parsed.clinicalManifestation !== '—')       fields.clinicalManifestation = parsed.clinicalManifestation
         if (parsed.underlyingDisease && parsed.underlyingDisease !== '—')               fields.underlyingDisease = parsed.underlyingDisease
         if (parsed.imagingDiagnosis && parsed.imagingDiagnosis !== '—')                 fields.imagingDiagnosis = parsed.imagingDiagnosis
+        if (Object.keys(fields).length === 0) return
         onUpdate(patient.id, fields)
         setExpanded(true)
       } catch { /* silent */ }

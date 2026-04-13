@@ -232,14 +232,13 @@ function App() {
         <div className="center-col-header">
           <div>
             <h2 className="center-col-title">
-              {isQueue ? 'Patient Queue' : 'History'}
+              {isQueue ? 'Patient List' : 'History'}
             </h2>
-            <p className="center-col-sub">
-              {isQueue
-                ? `${patients.length} patient${patients.length !== 1 ? 's' : ''} · Drag to reorder · Swipe → discharge · Swipe ← annotate`
-                : `${history.length} discharged patient${history.length !== 1 ? 's' : ''}`
-              }
-            </p>
+            {!isQueue && (
+              <p className="center-col-sub">
+                {history.length} discharged patient{history.length !== 1 ? 's' : ''}
+              </p>
+            )}
           </div>
           <div className="queue-count-badge">
             <span className="queue-count-num">{isQueue ? patients.length : history.length}</span>

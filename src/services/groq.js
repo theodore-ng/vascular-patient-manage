@@ -29,6 +29,7 @@ Extract the following fields from the voice transcript and return ONLY a valid J
 - underlyingDisease: comorbidities — pre-existing or concurrent conditions (string)
 - imagingDiagnosis: imaging findings — radiological or diagnostic findings mentioned (string)
 
+IMPORTANT: Translate ALL extracted text values into English, regardless of the input language.
 If a field is not mentioned, use null.
 Return ONLY the JSON object, no markdown, no explanation.`,
         },
