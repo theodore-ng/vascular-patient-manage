@@ -35,7 +35,7 @@ export default function ConsultPanel({ selectedPatient }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed] = useState(true)
   const chatEndRef = useRef(null)
   const textareaRef = useRef(null)
   const prevPatientId = useRef(null)
