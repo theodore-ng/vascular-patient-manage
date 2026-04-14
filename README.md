@@ -1,19 +1,25 @@
 # Vascular Flow
 
-A high-end, responsive web application for vascular surgeons to manage patient flow using voice input and AI-powered parsing.
+Patient queue management for vascular surgery departments.
 
-Speak a patient summary aloud — the app transcribes it, extracts structured clinical fields via AI, and places the patient into a live priority queue. Cards can be dragged to reorder and swiped right to dismiss.
+Speak or type a patient summary — AI extracts structured clinical fields and places the patient into a live priority queue. Cards can be tagged, grouped, dragged to reorder, and swiped right to discharge.
+
+**Live app:** https://theodore-ng.github.io/vascular-patient-manage/
 
 ---
 
 ## Features
 
-- **Voice Input** — press the mic and speak; the Web Speech API captures the transcript in real time
-- **AI Parsing** — Groq (Llama 3.3 70B) extracts Name, Age, Clinical Manifestation, Underlying Disease, and Imaging Diagnosis from free-form speech
-- **Priority Queue** — drag the handle on any card to reorder patient priority; order persists to the database
-- **Swipe to Remove** — slide a card to the right past the threshold to delete it with a smooth animated dismissal
-- **Cloud Persistence** — patient data is stored in Supabase and survives page refreshes; falls back to `localStorage` if Supabase is not configured
-- **Dark Glassmorphism UI** — high-contrast design built for clinical environments and mobile use
+- **Voice Input** — press the mic and speak; Web Speech API captures the transcript in real time
+- **AI Parsing** — Groq (Llama 3.3 70B) extracts Name, Age, Clinical Manifestation, Underlying Disease, and Imaging Diagnosis from free-form speech; clinical fields translated to English, name preserved as spoken
+- **Priority Queue** — drag the handle on any card to reorder; order persists to the database
+- **Swipe to Discharge** — slide a card right past the threshold to move it to history
+- **Tags** — color-code cards (red / yellow / green) with an inline picker
+- **Groups** — create named groups, assign patients, filter the queue by group
+- **Notes** — per-card inline note editor
+- **AI Consultant** — collapsible right panel for structured clinical consultation
+- **History** — view discharged patients with one-tap restore back to queue
+- **Cloud Persistence** — Supabase (PostgreSQL); falls back to `localStorage` if not configured
 
 ---
 
@@ -22,10 +28,10 @@ Speak a patient summary aloud — the app transcribes it, extracts structured cl
 | | |
 |---|---|
 | Framework | React 19 + Vite 8 |
-| Styling | Vanilla CSS — dark glassmorphism design system |
+| Styling | Vanilla CSS |
 | Icons | lucide-react |
 | Drag & Drop | @dnd-kit/core + @dnd-kit/sortable |
-| Voice | Web Speech API (browser-native, no library) |
+| Voice | Web Speech API (browser-native) |
 | AI | Groq API — `llama-3.3-70b-versatile` |
 | Database | Supabase (PostgreSQL) |
 
@@ -51,20 +57,24 @@ VITE_SUPABASE_ANON_KEY=sb_publishable_...
 
 The Groq API key can also be set at runtime via the in-app Settings modal (gear icon) — it is saved to `localStorage`.
 
-### 3. Set up the Supabase table
+Supabase is optional. If omitted, the app uses `localStorage`.
+
+### 3. Set up the Supabase table (optional)
 
 Run this in your Supabase project's SQL editor:
 
 ```sql
 create table patients (
-  id                     uuid        primary key default gen_random_uuid(),
-  name                   text,
-  age                    integer,
+  id                    uuid        primary key default gen_random_uuid(),
+  name                  text,
+  age                   integer,
   clinical_manifestation text,
-  underlying_disease     text,
-  imaging_diagnosis      text,
-  position               integer     not null default 0,
-  created_at             timestamptz default now()
+  underlying_disease    text,
+  imaging_diagnosis     text,
+  position              integer     not null default 0,
+  status                text        not null default 'queue',
+  discharged_at         timestamptz,
+  created_at            timestamptz default now()
 );
 ```
 
@@ -82,8 +92,8 @@ Open [http://localhost:5173](http://localhost:5173) in Chrome or Edge (required 
 
 ```
 src/
-├── App.jsx                    # Root component — state, Supabase sync, settings modal
-├── index.css                  # Global stylesheet — all design tokens and components
+├── App.jsx                    # State hub — patients, history, groups, add/remove/reorder/update
+├── index.css                  # Single stylesheet — all design tokens and components
 ├── lib/
 │   └── supabase.js            # Supabase client
 ├── services/
@@ -91,32 +101,33 @@ src/
 ├── hooks/
 │   └── useSwipeRemove.js      # Pointer/touch swipe gesture hook
 └── components/
-    ├── VoiceInput.jsx         # Mic button, live transcript, processing states
-    ├── PatientQueue.jsx       # Sortable drag-and-drop list container
-    └── PatientCard.jsx        # Individual patient card with swipe-to-remove
+    ├── VoiceInput.jsx         # Mic FAB, transcript, processing states
+    ├── PatientFormModal.jsx   # Add / edit patient form
+    ├── PatientQueue.jsx       # Drag-and-drop list with group filter chips
+    ├── PatientCard.jsx        # Card with tag, group, note, voice update, edit
+    ├── PatientHistory.jsx     # Discharged patients with restore
+    ├── Sidebar.jsx            # Left navigation
+    └── ConsultPanel.jsx       # Collapsible AI consultation panel
 ```
 
 ---
 
-## How It Works
+## Deployment
 
-```
-Surgeon speaks
-    ↓  Web Speech API
-Transcript string
-    ↓  Groq API (llama-3.3-70b-versatile)
-Structured JSON  { name, age, clinicalManifestation, underlyingDisease, imagingDiagnosis }
-    ↓  App state + Supabase insert
-Patient card appears in queue
-    ↓  Drag handle → reorder → Supabase position update
-    ↓  Swipe right  → remove  → Supabase delete
-```
+The app is deployed to GitHub Pages via GitHub Actions on every push to `main`.
+
+To deploy your own fork:
+1. Go to **Settings → Pages** and set source to **GitHub Actions**
+2. Add these repository secrets under **Settings → Secrets and variables → Actions**:
+   - `VITE_GROQ_API_KEY`
+   - `VITE_SUPABASE_URL` (optional)
+   - `VITE_SUPABASE_ANON_KEY` (optional)
 
 ---
 
 ## Browser Support
 
-Voice input requires the Web Speech API, which is supported in **Chrome 25+** and **Edge 79+**. All other features (drag-and-drop, swipe, database sync) work in all modern browsers.
+Voice input requires the Web Speech API: **Chrome 25+** and **Edge 79+**. All other features work in all modern browsers.
 
 ---
 
