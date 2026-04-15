@@ -58,7 +58,19 @@ function App() {
       supabase.from('patients').select('*').eq('status', 'queue').order('position', { ascending: true }),
       supabase.from('patients').select('*').eq('status', 'discharged').order('discharged_at', { ascending: false }),
     ])
-    if (!queueRes.error && queueRes.data) setPatients(queueRes.data.map(dbToLocal))
+    if (!queueRes.error && queueRes.data) {
+      const localPatients = queueRes.data.map(dbToLocal)
+      setPatients(localPatients)
+      // Restore group list from patient data
+      const savedGroups = localPatients.map(p => p.group).filter(Boolean)
+      if (savedGroups.length > 0) {
+        setGroups(prev => {
+          const merged = Array.from(new Set([...prev, ...savedGroups]))
+          localStorage.setItem('vascular_groups', JSON.stringify(merged))
+          return merged
+        })
+      }
+    }
     if (!historyRes.error && historyRes.data) setHistory(historyRes.data.map(dbToLocal))
     setLoading(false)
   }
@@ -73,6 +85,9 @@ function App() {
       imaging_diagnosis: patient.imagingDiagnosis,
       status: 'queue',
       position,
+      tag: patient.tag ?? null,
+      group_name: patient.group ?? null,
+      note: patient.note ?? null,
     }
   }
 
@@ -85,6 +100,9 @@ function App() {
       underlyingDisease: row.underlying_disease,
       imagingDiagnosis: row.imaging_diagnosis,
       dischargedAt: row.discharged_at ?? null,
+      tag: row.tag ?? null,
+      group: row.group_name ?? null,
+      note: row.note ?? null,
     }
   }
 
@@ -138,10 +156,18 @@ function App() {
 
   const tagPatient = useCallback((id, color) => {
     setPatients(prev => prev.map(p => p.id === id ? { ...p, tag: color } : p))
+    if (SUPABASE_ENABLED) {
+      supabase.from('patients').update({ tag: color }).eq('id', id)
+        .then(({ error }) => { if (error) console.error(error) })
+    }
   }, [])
 
   const setPatientGroup = useCallback((id, group) => {
     setPatients(prev => prev.map(p => p.id === id ? { ...p, group } : p))
+    if (SUPABASE_ENABLED) {
+      supabase.from('patients').update({ group_name: group ?? null }).eq('id', id)
+        .then(({ error }) => { if (error) console.error(error) })
+    }
   }, [])
 
   const addGroup = useCallback((name) => {
@@ -157,6 +183,10 @@ function App() {
 
   const notePatient = useCallback((id, note) => {
     setPatients(prev => prev.map(p => p.id === id ? { ...p, note } : p))
+    if (SUPABASE_ENABLED) {
+      supabase.from('patients').update({ note: note ?? null }).eq('id', id)
+        .then(({ error }) => { if (error) console.error(error) })
+    }
   }, [])
 
   const restorePatient = useCallback((patient) => {
@@ -187,6 +217,9 @@ function App() {
             clinical_manifestation: p.clinicalManifestation,
             underlying_disease: p.underlyingDisease,
             imaging_diagnosis: p.imagingDiagnosis,
+            tag: p.tag ?? null,
+            group_name: p.group ?? null,
+            note: p.note ?? null,
           }).eq('id', id)
             .then(({ error }) => { if (error) console.error(error) })
         }
