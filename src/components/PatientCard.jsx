@@ -162,21 +162,16 @@ export default function PatientCard({
 
         {/* Card content */}
         <div className="card-body">
-          {/* Name row with inline action buttons */}
+          {/* Name row: name/age · edit · mic · expand (right end) */}
           <div className="card-top-row">
             <div className="patient-name-block">
-              <h3 className="patient-name">
-                {patient.name}
-                {groupLabel && <span className="card-group-badge">{groupLabel}</span>}
-              </h3>
+              <h3 className="patient-name">{patient.name}</h3>
               {patient.age !== null && (
                 <span className="patient-age">{patient.age} years old</span>
               )}
             </div>
 
-            {tagColor && <span className={`card-tag-dot card-tag-dot--${tagColor}`} />}
-
-            {/* Edit button — icon only, inline with name */}
+            {/* Edit button */}
             <button
               className="card-inline-btn"
               onClick={e => { e.stopPropagation(); onEdit(patient) }}
@@ -185,7 +180,7 @@ export default function PatientCard({
               <Pencil size={13} />
             </button>
 
-            {/* Voice update button — icon only, inline */}
+            {/* Voice update button */}
             {voiceState === 'idle' && (
               <button className="card-inline-btn" onClick={startVoiceUpdate} title="Voice update">
                 <Mic size={13} />
@@ -201,13 +196,24 @@ export default function PatientCard({
                 <Loader2 size={13} className="spin" />
               </button>
             )}
+
+            {/* Expand — circle, right end */}
+            <button className={`card-expand-btn ${expanded ? 'card-expand-btn--open' : ''}`} onClick={toggleExpand} title={expanded ? 'Collapse' : 'Show details'}>
+              {expanded ? <Minus size={13} /> : <Plus size={13} />}
+            </button>
           </div>
 
-          {/* Note snippet */}
-          {patient.note && !noteOpen && (
-            <div className="card-note-snippet">
-              <FileText size={12} />
-              <span>{patient.note}</span>
+          {/* Meta row: tag · group · note — only shown when at least one exists */}
+          {(tagColor || groupLabel || (patient.note && !noteOpen)) && (
+            <div className="card-meta-row">
+              {tagColor && <span className={`card-tag-dot card-tag-dot--${tagColor}`} />}
+              {groupLabel && <span className="card-group-badge">{groupLabel}</span>}
+              {patient.note && !noteOpen && (
+                <span className="card-note-snippet">
+                  <FileText size={11} />
+                  <span>{patient.note}</span>
+                </span>
+              )}
             </div>
           )}
 
@@ -321,12 +327,6 @@ export default function PatientCard({
             </div>
           )}
 
-          {/* Expand toggle — icon only */}
-          <div className="card-actions">
-            <button className="card-expand-btn" onClick={toggleExpand} title={expanded ? 'Collapse' : 'Show details'}>
-              {expanded ? <Minus size={13} /> : <Plus size={13} />}
-            </button>
-          </div>
         </div>
       </div>
     </div>

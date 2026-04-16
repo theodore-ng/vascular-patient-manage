@@ -565,35 +565,43 @@ body {
   line-height: 1.45;
 }
 
-/* ── Card actions row ───────────────────────────────────────────── */
-.card-actions {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 8px;
-  padding-top: 6px;
-  border-top: 1px solid var(--border);
-}
-
+/* ── Card expand button (circle, right end of top row) ─────────── */
 .card-expand-btn {
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text-muted);
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--primary);
+  border: none;
+  color: #fff;
   cursor: pointer;
   padding: 0;
-  transition: all .12s;
+  margin-left: auto;
+  transition: background .12s, transform .15s;
 }
 
 .card-expand-btn:hover {
-  background: var(--bg);
-  color: var(--text-primary);
-  border-color: var(--border-strong);
+  background: var(--primary-hover);
+  transform: scale(1.08);
+}
+
+.card-expand-btn--open {
+  background: var(--text-secondary);
+}
+.card-expand-btn--open:hover {
+  background: var(--text-primary);
+}
+
+/* ── Card meta row (tag · group · note indicators) ──────────────── */
+.card-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  flex-wrap: wrap;
 }
 
 .card-voice-update-btn {
@@ -1705,15 +1713,14 @@ body {
 .group-filter-chip:hover { border-color: var(--primary); color: var(--primary); }
 .group-filter-chip--active { background: var(--primary); color: #fff; border-color: var(--primary); }
 
-/* ── Note snippet ─────────────────────────────────────────────────── */
+/* ── Note snippet (inline inside card-meta-row) ───────────────────── */
 .card-note-snippet {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: 0.75rem;
+  gap: 4px;
+  font-size: 0.72rem;
   color: var(--text-secondary);
-  margin-top: 4px;
-  padding: 4px 6px;
+  padding: 2px 6px;
   background: #f8fafc;
   border-radius: 6px;
   border: 1px solid var(--border);
