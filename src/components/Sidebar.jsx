@@ -1,10 +1,14 @@
-import { Users, BarChart2, FileText, Settings, Activity, Clock } from 'lucide-react'
+import { Users, BarChart2, FileText, Settings, Activity, Clock, Wrench } from 'lucide-react'
 
 const NAV_ITEMS = [
   { icon: Users,     label: 'Patient Queue', id: 'queue'    },
   { icon: Clock,     label: 'History',       id: 'history'  },
   { icon: BarChart2, label: 'Analytics',     id: 'analytics', soon: true },
   { icon: FileText,  label: 'Reports',       id: 'reports',   soon: true },
+]
+
+const TOOL_ITEMS = [
+  { icon: Wrench, label: 'Tools', id: 'tools' },
 ]
 
 export default function Sidebar({ currentView, onViewChange, onOpenSettings }) {
@@ -34,6 +38,18 @@ export default function Sidebar({ currentView, onViewChange, onOpenSettings }) {
             <Icon size={17} />
             <span>{label}</span>
             {soon && <span className="soon-badge">Soon</span>}
+          </button>
+        ))}
+
+        <p className="sidebar-section-label" style={{ marginTop: '16px' }}>Tools</p>
+        {TOOL_ITEMS.map(({ icon: Icon, label, id }) => (
+          <button
+            key={id}
+            className={`sidebar-nav-item ${currentView === id ? 'active' : ''}`}
+            onClick={() => onViewChange(id)}
+          >
+            <Icon size={17} />
+            <span>{label}</span>
           </button>
         ))}
       </nav>

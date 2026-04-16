@@ -7,6 +7,7 @@ import PatientQueue from './components/PatientQueue'
 import PatientHistory from './components/PatientHistory'
 import ConsultPanel from './components/ConsultPanel'
 import PatientFormModal from './components/PatientFormModal'
+import ToolsPanel from './components/ToolsPanel'
 
 const SUPABASE_ENABLED =
   import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -233,6 +234,13 @@ function App() {
     setSelectedPatient(prev => prev?.id === id ? { ...prev, ...fields } : prev)
   }, [])
 
+  const applyAutoGroups = useCallback((assignments) => {
+    // assignments: [{ id, group }]
+    const uniqueGroups = [...new Set(assignments.map(a => a.group).filter(Boolean))]
+    uniqueGroups.forEach(g => addGroup(g))
+    assignments.forEach(({ id, group }) => { if (group) setPatientGroup(id, group) })
+  }, [addGroup, setPatientGroup])
+
   const reorderPatients = useCallback((newOrder) => {
     setPatients(newOrder)
     if (SUPABASE_ENABLED) {
@@ -304,10 +312,15 @@ function App() {
             activeGroupFilter={activeGroupFilter}
             onFilterChange={setActiveGroupFilter}
           />
-        ) : (
+        ) : currentView === 'history' ? (
           <PatientHistory
             history={history}
             onRestore={restorePatient}
+          />
+        ) : (
+          <ToolsPanel
+            patients={patients}
+            onApplyAutoGroups={applyAutoGroups}
           />
         )}
       </div>
