@@ -7,7 +7,7 @@ import {
   LogOut, Archive, Tag, Layers, FileText, X, Check,
 } from 'lucide-react'
 import { useSwipeRemove } from '../hooks/useSwipeRemove'
-import { parsePatientTranscript } from '../services/groq'
+import { parsePatientTranscript, VASCULAR_GROUPS } from '../services/groq'
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
 
@@ -16,7 +16,6 @@ const TAG_COLORS = ['red', 'yellow', 'green']
 export default function PatientCard({
   patient, index, selected,
   onSelect, onDischarge, onDelete, onUpdate, onEdit, onTag, onSetGroup, onNote,
-  groups, onAddGroup,
 }) {
   const [expanded, setExpanded]               = useState(false)
   const [voiceState, setVoiceState]           = useState('idle')
@@ -24,7 +23,6 @@ export default function PatientCard({
   const [noteText, setNoteText]               = useState(patient.note || '')
   const [tagPickerOpen, setTagPickerOpen]     = useState(false)
   const [groupPickerOpen, setGroupPickerOpen] = useState(false)
-  const [groupInput, setGroupInput]           = useState('')
   const transcriptRef  = useRef('')
   const recognitionRef = useRef(null)
 
@@ -98,15 +96,6 @@ export default function PatientCard({
   /* ── Group picker actions ─────────────────────────────── */
   function assignGroup(g) {
     onSetGroup(patient.id, patient.group === g ? null : g)
-    setGroupPickerOpen(false)
-  }
-
-  function submitNewGroup() {
-    const name = groupInput.trim()
-    if (!name) return
-    onAddGroup(name)
-    onSetGroup(patient.id, name)
-    setGroupInput('')
     setGroupPickerOpen(false)
   }
 
@@ -241,31 +230,16 @@ export default function PatientCard({
           {/* Inline group picker */}
           {groupPickerOpen && (
             <div className="card-group-picker" onClick={e => e.stopPropagation()}>
-              {groups.length > 0 && (
-                <div className="group-chips">
-                  {groups.map(g => (
-                    <button
-                      key={g}
-                      className={`group-chip ${patient.group === g ? 'group-chip--active' : ''}`}
-                      onClick={() => assignGroup(g)}
-                    >
-                      {g}
-                    </button>
-                  ))}
-                </div>
-              )}
-              <div className="group-input-row">
-                <input
-                  className="group-input"
-                  value={groupInput}
-                  onChange={e => setGroupInput(e.target.value)}
-                  placeholder="New group…"
-                  onKeyDown={e => { if (e.key === 'Enter') submitNewGroup() }}
-                  autoFocus
-                />
-                <button className="group-input-add" disabled={!groupInput.trim()} onClick={submitNewGroup}>
-                  Add
-                </button>
+              <div className="group-chips">
+                {VASCULAR_GROUPS.map(g => (
+                  <button
+                    key={g}
+                    className={`group-chip ${patient.group === g ? 'group-chip--active' : ''}`}
+                    onClick={() => assignGroup(g)}
+                  >
+                    {g}
+                  </button>
+                ))}
               </div>
               {patient.group && (
                 <button className="group-clear-btn" onClick={() => { onSetGroup(patient.id, null); setGroupPickerOpen(false) }}>

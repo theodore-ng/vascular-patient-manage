@@ -10,6 +10,7 @@ export const VASCULAR_GROUPS = [
   'Venous Disease (CVI, DVT, Varicose veins)',
   'Visceral / Renal (Mesenteric ischemia, Renal stenosis)',
   'Vascular Trauma',
+  'Others',
 ]
 
 function getApiKey() {

@@ -1,4 +1,4 @@
-import { Users, BarChart2, FileText, Settings, Activity, Clock, Wrench } from 'lucide-react'
+import { Users, BarChart2, FileText, Settings, Activity, Clock, Wrench, Stethoscope } from 'lucide-react'
 
 const NAV_ITEMS = [
   { icon: Users,     label: 'Patient Queue', id: 'queue'    },
@@ -8,7 +8,8 @@ const NAV_ITEMS = [
 ]
 
 const TOOL_ITEMS = [
-  { icon: Wrench, label: 'Tools', id: 'tools' },
+  { icon: Stethoscope, label: 'AI Consultant', id: 'consult' },
+  { icon: Wrench,      label: 'Tools',         id: 'tools'   },
 ]
 
 export default function Sidebar({ currentView, onViewChange, onOpenSettings }) {

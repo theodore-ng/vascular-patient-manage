@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   DndContext,
   closestCenter,
@@ -14,20 +15,46 @@ import {
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers'
 import { Users } from 'lucide-react'
 import PatientCard from './PatientCard'
+import { VASCULAR_GROUPS } from '../services/groq'
+
+const SORT_OPTIONS = [
+  { key: 'queue',      label: 'Queue'    },
+  { key: 'name-asc',   label: 'Name A→Z' },
+  { key: 'name-desc',  label: 'Name Z→A' },
+  { key: 'age-asc',    label: 'Age ↑'    },
+  { key: 'age-desc',   label: 'Age ↓'    },
+]
+
+const TAG_COLORS = ['red', 'yellow', 'green']
 
 export default function PatientQueue({
   patients, selectedId, onSelect, onReorder, onDischarge, onDelete,
   onUpdate, onEdit, onTag, onSetGroup, onNote,
-  groups, onAddGroup, activeGroupFilter, onFilterChange,
+  activeGroupFilter, onFilterChange,
 }) {
+  const [sortBy, setSortBy]       = useState('queue')
+  const [tagFilter, setTagFilter] = useState(null)
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
   )
 
-  const visiblePatients = activeGroupFilter
-    ? patients.filter(p => p.group === activeGroupFilter)
-    : patients
+  /* ── Derive display list ─────────────────── */
+  let display = patients
+  if (activeGroupFilter) display = display.filter(p => p.group === activeGroupFilter)
+  if (tagFilter)         display = display.filter(p => p.tag   === tagFilter)
+  if (sortBy !== 'queue') {
+    display = [...display].sort((a, b) => {
+      if (sortBy === 'name-asc')  return (a.name || '').localeCompare(b.name || '')
+      if (sortBy === 'name-desc') return (b.name || '').localeCompare(a.name || '')
+      if (sortBy === 'age-asc')   return (a.age ?? 999) - (b.age ?? 999)
+      if (sortBy === 'age-desc')  return (b.age ?? 999) - (a.age ?? 999)
+      return 0
+    })
+  }
+
+  const isDndEnabled = !activeGroupFilter && !tagFilter && sortBy === 'queue'
 
   function handleDragEnd(event) {
     const { active, over } = event
@@ -37,7 +64,10 @@ export default function PatientQueue({
     onReorder(arrayMove(patients, oldIndex, newIndex))
   }
 
-  const cards = visiblePatients.map((patient, index) => (
+  /* ── Groups present in current queue ─────── */
+  const activeGroups = VASCULAR_GROUPS.filter(g => patients.some(p => p.group === g))
+
+  const cards = display.map((patient, index) => (
     <PatientCard
       key={patient.id}
       patient={patient}
@@ -51,15 +81,47 @@ export default function PatientQueue({
       onTag={onTag}
       onSetGroup={onSetGroup}
       onNote={onNote}
-      groups={groups}
-      onAddGroup={onAddGroup}
     />
   ))
 
   return (
     <div className="patient-queue-wrapper">
-      {/* Group filter chips */}
-      {groups.length > 0 && (
+      {/* Sort + tag filter toolbar */}
+      <div className="queue-toolbar">
+        <div className="queue-sort-row">
+          {SORT_OPTIONS.map(opt => (
+            <button
+              key={opt.key}
+              className={`queue-sort-btn ${sortBy === opt.key ? 'queue-sort-btn--active' : ''}`}
+              onClick={() => setSortBy(opt.key)}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+        <div className="queue-tag-filter">
+          <button
+            className={`queue-tag-btn ${!tagFilter ? 'queue-tag-btn--active' : ''}`}
+            onClick={() => setTagFilter(null)}
+            title="All tags"
+          >
+            All
+          </button>
+          {TAG_COLORS.map(c => (
+            <button
+              key={c}
+              className={`queue-tag-btn queue-tag-btn--dot ${tagFilter === c ? 'queue-tag-btn--active' : ''}`}
+              onClick={() => setTagFilter(tagFilter === c ? null : c)}
+              title={c}
+            >
+              <span className={`queue-tag-dot queue-tag-dot--${c}`} />
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Group filter chips — only groups that have patients */}
+      {activeGroups.length > 0 && (
         <div className="group-filter-row">
           <button
             className={`group-filter-chip ${!activeGroupFilter ? 'group-filter-chip--active' : ''}`}
@@ -67,7 +129,7 @@ export default function PatientQueue({
           >
             All
           </button>
-          {groups.map(g => (
+          {activeGroups.map(g => (
             <button
               key={g}
               className={`group-filter-chip ${activeGroupFilter === g ? 'group-filter-chip--active' : ''}`}
@@ -79,20 +141,19 @@ export default function PatientQueue({
         </div>
       )}
 
-      {visiblePatients.length === 0 && (
+      {display.length === 0 && (
         <div className="queue-empty glass-panel">
           <Users size={48} strokeWidth={1} />
           <p className="queue-empty-title">
-            {activeGroupFilter ? `No patients in "${activeGroupFilter}"` : 'No patients in queue'}
+            {(activeGroupFilter || tagFilter) ? 'No patients match this filter' : 'No patients in queue'}
           </p>
           <p className="queue-empty-sub">
-            {activeGroupFilter ? 'Select a different group or clear the filter' : 'Use the mic above to add a patient via voice'}
+            {(activeGroupFilter || tagFilter) ? 'Try a different filter' : 'Use the + button to add a patient'}
           </p>
         </div>
       )}
 
-      {/* Only enable DnD when not filtering */}
-      {visiblePatients.length > 0 && !activeGroupFilter && (
+      {display.length > 0 && isDndEnabled ? (
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -100,17 +161,15 @@ export default function PatientQueue({
           onDragEnd={handleDragEnd}
         >
           <SortableContext
-            items={visiblePatients.map(p => p.id)}
+            items={display.map(p => p.id)}
             strategy={verticalListSortingStrategy}
           >
             <div className="patient-queue">{cards}</div>
           </SortableContext>
         </DndContext>
-      )}
-
-      {visiblePatients.length > 0 && activeGroupFilter && (
+      ) : display.length > 0 ? (
         <div className="patient-queue">{cards}</div>
-      )}
+      ) : null}
     </div>
   )
 }

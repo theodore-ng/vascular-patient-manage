@@ -23,10 +23,6 @@ function App() {
   const [showKey, setShowKey] = useState(false)
   const [savedMsg, setSavedMsg] = useState(false)
   const [patientForm, setPatientForm] = useState(null) // null | { mode: 'add' } | { mode: 'edit', patient }
-  const [groups, setGroups] = useState(() => {
-    const stored = localStorage.getItem('vascular_groups')
-    return stored ? JSON.parse(stored) : []
-  })
   const [activeGroupFilter, setActiveGroupFilter] = useState(null)
   const [fabOpen, setFabOpen] = useState(false)
   const [voiceStatus, setVoiceStatus] = useState('idle')
@@ -64,17 +60,7 @@ function App() {
       supabase.from('patients').select('*').eq('status', 'discharged').order('discharged_at', { ascending: false }),
     ])
     if (!queueRes.error && queueRes.data) {
-      const localPatients = queueRes.data.map(dbToLocal)
-      setPatients(localPatients)
-      // Restore group list from patient data
-      const savedGroups = localPatients.map(p => p.group).filter(Boolean)
-      if (savedGroups.length > 0) {
-        setGroups(prev => {
-          const merged = Array.from(new Set([...prev, ...savedGroups]))
-          localStorage.setItem('vascular_groups', JSON.stringify(merged))
-          return merged
-        })
-      }
+      setPatients(queueRes.data.map(dbToLocal))
     }
     if (!historyRes.error && historyRes.data) setHistory(historyRes.data.map(dbToLocal))
     setLoading(false)
@@ -175,17 +161,6 @@ function App() {
     }
   }, [])
 
-  const addGroup = useCallback((name) => {
-    const trimmed = name.trim()
-    if (!trimmed) return
-    setGroups(prev => {
-      if (prev.includes(trimmed)) return prev
-      const next = [...prev, trimmed]
-      localStorage.setItem('vascular_groups', JSON.stringify(next))
-      return next
-    })
-  }, [])
-
   const notePatient = useCallback((id, note) => {
     setPatients(prev => prev.map(p => p.id === id ? { ...p, note } : p))
     if (SUPABASE_ENABLED) {
@@ -235,11 +210,8 @@ function App() {
   }, [])
 
   const applyAutoGroups = useCallback((assignments) => {
-    // assignments: [{ id, group }]
-    const uniqueGroups = [...new Set(assignments.map(a => a.group).filter(Boolean))]
-    uniqueGroups.forEach(g => addGroup(g))
     assignments.forEach(({ id, group }) => { if (group) setPatientGroup(id, group) })
-  }, [addGroup, setPatientGroup])
+  }, [setPatientGroup])
 
   const reorderPatients = useCallback((newOrder) => {
     setPatients(newOrder)
@@ -307,8 +279,6 @@ function App() {
             onTag={tagPatient}
             onSetGroup={setPatientGroup}
             onNote={notePatient}
-            groups={groups}
-            onAddGroup={addGroup}
             activeGroupFilter={activeGroupFilter}
             onFilterChange={setActiveGroupFilter}
           />
@@ -317,6 +287,8 @@ function App() {
             history={history}
             onRestore={restorePatient}
           />
+        ) : currentView === 'consult' ? (
+          <ConsultPanel selectedPatient={selectedPatient} standalone />
         ) : (
           <ToolsPanel
             patients={patients}
@@ -324,9 +296,6 @@ function App() {
           />
         )}
       </div>
-
-      {/* Right — AI Consult Panel */}
-      <ConsultPanel selectedPatient={selectedPatient} />
 
       {/* FAB group — only show on queue view */}
       {isQueue && (

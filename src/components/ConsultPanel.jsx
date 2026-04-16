@@ -31,11 +31,11 @@ function buildPatientContext(patient) {
   return `\n\nActive patient context:\n- Name: ${patient.name}\n- Age: ${patient.age ?? '—'}\n- Clinical Presentation: ${patient.clinicalManifestation}\n- Comorbidities: ${patient.underlyingDisease}\n- Imaging Findings: ${patient.imagingDiagnosis}`
 }
 
-export default function ConsultPanel({ selectedPatient }) {
+export default function ConsultPanel({ selectedPatient, standalone = false }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const [collapsed, setCollapsed] = useState(true)
+  const [collapsed, setCollapsed] = useState(false)
   const chatEndRef = useRef(null)
   const textareaRef = useRef(null)
   const prevPatientId = useRef(null)
@@ -126,10 +126,16 @@ export default function ConsultPanel({ selectedPatient }) {
     }
   }
 
+  const isExpanded = standalone || !collapsed
+
   return (
-    <section className={`consult-panel glass-panel ${collapsed ? 'consult-panel--collapsed' : ''}`}>
+    <section className={`consult-panel glass-panel${collapsed && !standalone ? ' consult-panel--collapsed' : ''}${standalone ? ' consult-panel--standalone' : ''}`}>
       {/* Header */}
-      <div className="consult-header" onClick={() => setCollapsed(v => !v)} style={{ cursor: 'pointer' }}>
+      <div
+        className="consult-header"
+        onClick={standalone ? undefined : () => setCollapsed(v => !v)}
+        style={standalone ? undefined : { cursor: 'pointer' }}
+      >
         <div className="consult-header-left">
           <div className="consult-icon">
             <Stethoscope size={16} />
@@ -145,14 +151,16 @@ export default function ConsultPanel({ selectedPatient }) {
         </div>
         <div className="consult-header-right">
           <span className="consult-model-badge">Llama 3.3 70B</span>
-          <button className="consult-collapse-btn" onClick={e => { e.stopPropagation(); setCollapsed(v => !v) }}>
-            {collapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-          </button>
+          {!standalone && (
+            <button className="consult-collapse-btn" onClick={e => { e.stopPropagation(); setCollapsed(v => !v) }}>
+              {collapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Messages + Input — hidden when collapsed */}
-      {!collapsed && <div className="consult-messages">
+      {/* Messages + Input — hidden when collapsed (never collapsed in standalone) */}
+      {isExpanded && <div className="consult-messages">
         {messages.length === 0 && (
           <div className="consult-empty">
             <Bot size={36} strokeWidth={1} />
@@ -211,7 +219,7 @@ export default function ConsultPanel({ selectedPatient }) {
         <div ref={chatEndRef} />
       </div>}
 
-      {!collapsed && <div className="consult-input-area">
+      {isExpanded && <div className="consult-input-area">
         <textarea
           ref={textareaRef}
           className="consult-textarea"
