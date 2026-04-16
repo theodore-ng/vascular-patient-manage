@@ -153,6 +153,11 @@ src/
 - Speech recognition language defaults to `vi-VN` (Vietnamese)
 - To change: set `recognition.lang` in `startListening()`
 - States: `idle → listening → processing → idle | error`
+- **Does not render its own button** — controlled entirely by the parent via refs:
+  - `startRef` — parent calls `startRef.current()` to begin recording
+  - `stopRef`  — parent calls `stopRef.current()` to stop recording
+  - `onStatusChange(status)` — fired on every state transition so parent can show recording FAB
+- Renders only a status pill when active (recording, processing, error)
 - **Critical pattern**: all transcript processing happens in `recognition.onend`, NOT after
   calling `rec.stop()`. Chrome fires remaining `onresult` events asynchronously after
   `stop()` returns; `onend` is guaranteed to fire only after all of them complete.
@@ -161,9 +166,9 @@ src/
 
 ### `src/components/PatientCard.jsx`
 - Default view shows **name + age only** (compact)
-- Chevron "Details" button toggles `.card-details` (Clinical, Underlying, Imaging fields)
-- **Edit button** opens `PatientFormModal` pre-filled with current patient data
-- "Update" mic button runs an inline voice recording → Groq parse → `onUpdate(id, fields)`
+- **Edit** and **voice update** buttons are icon-only, inline with the name row (no text labels)
+- `+` / `−` icon button at the bottom of the card toggles `.card-details`
+- Voice update runs: inline SpeechRecognition → Groq parse → `onUpdate(id, fields)`
   - Same `onend`-based pattern as VoiceInput — processing in `recognition.onend`
   - On update: only fields the AI found (non-null, non-`'—'`) overwrite existing values
   - On successful parse: auto-expands the details section to show new values
@@ -228,11 +233,13 @@ Add new component styles at the bottom of the relevant section.
 
 ## FAB Layout
 
-Two floating buttons sit fixed above the right panel, stacked vertically:
-- **`+` button** (`.fab-text-btn`) — opens `PatientFormModal` in add mode
-- **Mic button** (`.voice-fab`) — starts voice recording
+A single **`+` button** (`.fab-text-btn`) is fixed above the right panel. Tapping it opens a mini-menu with two option pills:
+- **Voice** — triggers `voiceStartRef.current()` → VoiceInput starts recording
+- **Text** — opens `PatientFormModal` in add mode
 
-Both are wrapped in `.fab-group`:
+While recording the `+` is replaced by a pulsing mic stop button (`.voice-fab--recording`).
+While processing it shows a spinner (`.voice-fab--processing`).
+
 ```css
 .fab-group {
   position: fixed;
@@ -240,7 +247,12 @@ Both are wrapped in `.fab-group`:
   right: calc(var(--right-w) + 24px);
 }
 ```
-FABs are hidden when `currentView === 'history'`.
+The FAB and its menu are hidden when `currentView === 'history'`.
+
+App state that drives the FAB:
+- `fabOpen` — whether the option menu is open
+- `voiceStatus` — mirrored from VoiceInput via `onStatusChange`; `'idle' | 'listening' | 'processing' | 'error'`
+- `voiceStartRef` / `voiceStopRef` — refs wired to VoiceInput's internal functions
 
 ---
 
@@ -289,7 +301,9 @@ For Firefox users, voice input will show an error; all other features work.
 
 ## Deployment Notes
 
-- Set all three env vars as environment variables in your host (Vercel, Netlify, etc.)
+- Deployed to **GitHub Pages** via `.github/workflows/deploy.yml` — auto-deploys on push to `main`
+- Set `VITE_GROQ_API_KEY`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` as **repository secrets** (Settings → Secrets → Actions)
+- `base: '/vascular-patient-manage/'` is set in `vite.config.js` — required for GitHub Pages subpath
 - Supabase anon key is safe to expose publicly (it's the publishable key)
 - Groq API key should ideally be proxied server-side in production to avoid exposure
 - Build output is in `dist/` — static files, no server required
