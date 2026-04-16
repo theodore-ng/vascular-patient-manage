@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react'
-import { X, Eye, EyeOff } from 'lucide-react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { X, Eye, EyeOff, Mic, MicOff, Loader2, Pencil } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import Sidebar from './components/Sidebar'
 import VoiceInput from './components/VoiceInput'
@@ -27,6 +27,10 @@ function App() {
     return stored ? JSON.parse(stored) : []
   })
   const [activeGroupFilter, setActiveGroupFilter] = useState(null)
+  const [fabOpen, setFabOpen] = useState(false)
+  const [voiceStatus, setVoiceStatus] = useState('idle')
+  const voiceStartRef = useRef(null)
+  const voiceStopRef  = useRef(null)
 
   useEffect(() => {
     if (SUPABASE_ENABLED) {
@@ -314,14 +318,56 @@ function App() {
       {/* FAB group — only show on queue view */}
       {isQueue && (
         <div className="fab-group">
-          <button
-            className="fab-text-btn"
-            onClick={() => setPatientForm({ mode: 'add' })}
-            title="Add patient manually"
-          >
-            +
-          </button>
-          <VoiceInput onPatientParsed={addPatient} />
+          {/* Voice status pill (rendered by VoiceInput, no button) */}
+          <VoiceInput
+            onPatientParsed={addPatient}
+            startRef={voiceStartRef}
+            stopRef={voiceStopRef}
+            onStatusChange={setVoiceStatus}
+          />
+
+          {/* FAB options menu */}
+          {fabOpen && voiceStatus === 'idle' && (
+            <div className="fab-options">
+              <button
+                className="fab-option"
+                onClick={() => { setFabOpen(false); voiceStartRef.current?.() }}
+              >
+                <Mic size={15} /> Voice
+              </button>
+              <button
+                className="fab-option"
+                onClick={() => { setFabOpen(false); setPatientForm({ mode: 'add' }) }}
+              >
+                <Pencil size={15} /> Text
+              </button>
+            </div>
+          )}
+
+          {/* Main FAB — changes state when recording */}
+          {(voiceStatus === 'idle' || voiceStatus === 'error') && (
+            <button
+              className={`fab-text-btn ${fabOpen ? 'fab-text-btn--open' : ''}`}
+              onClick={() => setFabOpen(v => !v)}
+              title="Add patient"
+            >
+              +
+            </button>
+          )}
+          {voiceStatus === 'listening' && (
+            <button
+              className="voice-fab voice-fab--recording"
+              onClick={() => voiceStopRef.current?.()}
+              title="Stop recording"
+            >
+              <MicOff size={22} />
+            </button>
+          )}
+          {voiceStatus === 'processing' && (
+            <button className="voice-fab voice-fab--processing" disabled title="Parsing…">
+              <Loader2 size={22} className="spin" />
+            </button>
+          )}
         </div>
       )}
 

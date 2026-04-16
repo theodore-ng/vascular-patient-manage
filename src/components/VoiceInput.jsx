@@ -1,10 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { Mic, MicOff, Loader2, AlertCircle } from 'lucide-react'
 import { parsePatientTranscript } from '../services/groq'
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
 
-export default function VoiceInput({ onPatientParsed }) {
+export default function VoiceInput({ onPatientParsed, startRef, stopRef, onStatusChange }) {
   const [status, setStatus] = useState('idle') // idle | listening | processing | error
   const [errorMsg, setErrorMsg] = useState('')
   const recognitionRef = useRef(null)
@@ -12,44 +11,43 @@ export default function VoiceInput({ onPatientParsed }) {
   const onPatientParsedRef = useRef(onPatientParsed)
   useEffect(() => { onPatientParsedRef.current = onPatientParsed }, [onPatientParsed])
 
-  // Called from onend — guaranteed to run after all onresult events
+  const updateStatus = useCallback((s) => {
+    setStatus(s)
+    onStatusChange?.(s)
+  }, [onStatusChange])
+
   async function processTranscript() {
     const text = transcriptRef.current.trim()
-    if (!text) {
-      setStatus('idle')
-      return
-    }
-    setStatus('processing')
+    if (!text) { updateStatus('idle'); return }
+    updateStatus('processing')
     try {
       const patient = await parsePatientTranscript(text)
-      // Guard: don't create a patient if no meaningful data was extracted
       const hasData = patient.name !== '—' || patient.age !== null ||
         patient.clinicalManifestation !== '—' || patient.underlyingDisease !== '—' ||
         patient.imagingDiagnosis !== '—'
       if (!hasData) {
         setErrorMsg('Could not extract patient data. Please try again.')
-        setStatus('error')
+        updateStatus('error')
         return
       }
       onPatientParsedRef.current(patient)
       transcriptRef.current = ''
-      setStatus('idle')
+      updateStatus('idle')
     } catch (err) {
       setErrorMsg(err.message)
-      setStatus('error')
+      updateStatus('error')
     }
   }
 
   const startListening = useCallback(() => {
     if (!SpeechRecognition) {
       setErrorMsg('Speech recognition requires Chrome or Edge.')
-      setStatus('error')
+      updateStatus('error')
       return
     }
-
     transcriptRef.current = ''
     setErrorMsg('')
-    setStatus('listening')
+    updateStatus('listening')
 
     const recognition = new SpeechRecognition()
     recognitionRef.current = recognition
@@ -59,71 +57,42 @@ export default function VoiceInput({ onPatientParsed }) {
 
     recognition.onresult = (e) => {
       for (let i = e.resultIndex; i < e.results.length; i++) {
-        if (e.results[i].isFinal) {
-          transcriptRef.current += e.results[i][0].transcript
-        }
+        if (e.results[i].isFinal) transcriptRef.current += e.results[i][0].transcript
       }
     }
 
     recognition.onerror = (e) => {
       recognitionRef.current = null
       setErrorMsg(`Mic error: ${e.error}`)
-      setStatus('error')
+      updateStatus('error')
     }
 
-    // onend fires after ALL onresult events — safest place to process
     recognition.onend = () => {
       recognitionRef.current = null
       processTranscript()
     }
 
     recognition.start()
-  }, [])
+  }, [updateStatus])
 
   const stopListening = useCallback(() => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop()
-      // onend will fire and call processTranscript — nothing else needed here
-    }
+    if (recognitionRef.current) recognitionRef.current.stop()
   }, [])
 
-  const handleClick = () => {
-    if (status === 'idle' || status === 'error') startListening()
-    else if (status === 'listening') stopListening()
-  }
+  // Expose controls to parent via refs
+  useEffect(() => { if (startRef) startRef.current = startListening }, [startRef, startListening])
+  useEffect(() => { if (stopRef) stopRef.current = stopListening }, [stopRef, stopListening])
 
-  const fabClass = [
-    'voice-fab',
-    status === 'listening' ? 'voice-fab--recording' : '',
-    status === 'processing' ? 'voice-fab--processing' : '',
-  ].filter(Boolean).join(' ')
+  // Status pill only — button is owned by the FAB in App
+  if (status === 'idle') return null
 
   return (
-    <div className="voice-fab-root">
-      {status !== 'idle' && (
-        <div className={`voice-fab-status ${status === 'error' ? 'voice-fab-status--error' : ''}`}>
-          {status === 'listening' && (
-            <>
-              <span className="listening-dot" />
-              Recording… tap to stop
-            </>
-          )}
-          {status === 'processing' && 'Parsing patient…'}
-          {status === 'error' && errorMsg}
-        </div>
+    <div className={`voice-fab-status ${status === 'error' ? 'voice-fab-status--error' : ''}`}>
+      {status === 'listening' && (
+        <><span className="listening-dot" /> Recording… tap mic to stop</>
       )}
-
-      <button
-        className={fabClass}
-        onClick={handleClick}
-        disabled={status === 'processing'}
-        title="Add patient via voice"
-      >
-        {status === 'idle'       && <Mic size={22} />}
-        {status === 'listening'  && <MicOff size={22} />}
-        {status === 'processing' && <Loader2 size={22} className="spin" />}
-        {status === 'error'      && <AlertCircle size={22} />}
-      </button>
+      {status === 'processing' && 'Parsing patient…'}
+      {status === 'error' && errorMsg}
     </div>
   )
 }

@@ -2,8 +2,8 @@ import { useState, useCallback, useRef } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import {
-  GripVertical, User, Activity, Heart, Scan,
-  Trash2, ChevronDown, ChevronUp, Mic, MicOff, Loader2, Pencil,
+  GripVertical, Activity, Heart, Scan,
+  Trash2, Plus, Minus, Mic, MicOff, Loader2, Pencil,
   LogOut, Archive, Tag, Layers, FileText, X, Check,
 } from 'lucide-react'
 import { useSwipeRemove } from '../hooks/useSwipeRemove'
@@ -18,10 +18,10 @@ export default function PatientCard({
   onSelect, onDischarge, onDelete, onUpdate, onEdit, onTag, onSetGroup, onNote,
   groups, onAddGroup,
 }) {
-  const [expanded, setExpanded]         = useState(false)
-  const [voiceState, setVoiceState]     = useState('idle')
-  const [noteOpen, setNoteOpen]         = useState(false)
-  const [noteText, setNoteText]         = useState(patient.note || '')
+  const [expanded, setExpanded]               = useState(false)
+  const [voiceState, setVoiceState]           = useState('idle')
+  const [noteOpen, setNoteOpen]               = useState(false)
+  const [noteText, setNoteText]               = useState(patient.note || '')
   const [tagPickerOpen, setTagPickerOpen]     = useState(false)
   const [groupPickerOpen, setGroupPickerOpen] = useState(false)
   const [groupInput, setGroupInput]           = useState('')
@@ -37,7 +37,6 @@ export default function PatientCard({
   const { ref: swipeRef, translateX, openSide, close } = useSwipeRemove()
 
   const sortableStyle = { transform: CSS.Transform.toString(transform), transition }
-
   const cardStyle = (translateX !== 0)
     ? { transform: `translateX(${translateX}px)`, transition: 'none', zIndex: 2 }
     : { transition: 'transform 0.25s ease', zIndex: 2 }
@@ -71,12 +70,12 @@ export default function PatientCard({
       try {
         const parsed = await parsePatientTranscript(text)
         const fields = {}
-        if (parsed.name && parsed.name !== '—')                                         fields.name = parsed.name
-        if (parsed.age !== null)                                                         fields.age = parsed.age
-        if (parsed.clinicalManifestation && parsed.clinicalManifestation !== '—')       fields.clinicalManifestation = parsed.clinicalManifestation
-        if (parsed.underlyingDisease && parsed.underlyingDisease !== '—')               fields.underlyingDisease = parsed.underlyingDisease
-        if (parsed.imagingDiagnosis && parsed.imagingDiagnosis !== '—')                 fields.imagingDiagnosis = parsed.imagingDiagnosis
-        if (Object.keys(fields).length === 0) return
+        if (parsed.name && parsed.name !== '—')                                   fields.name = parsed.name
+        if (parsed.age !== null)                                                   fields.age = parsed.age
+        if (parsed.clinicalManifestation && parsed.clinicalManifestation !== '—') fields.clinicalManifestation = parsed.clinicalManifestation
+        if (parsed.underlyingDisease && parsed.underlyingDisease !== '—')         fields.underlyingDisease = parsed.underlyingDisease
+        if (parsed.imagingDiagnosis && parsed.imagingDiagnosis !== '—')           fields.imagingDiagnosis = parsed.imagingDiagnosis
+        if (Object.keys(fields).length === 0) { setVoiceState('idle'); return }
         onUpdate(patient.id, fields)
         setExpanded(true)
       } catch { /* silent */ }
@@ -95,12 +94,6 @@ export default function PatientCard({
 
   /* ── Swipe action helpers ─────────────────────────────── */
   function act(fn) { close(); fn() }
-
-  const voiceBtnClass = voiceState === 'listening'
-    ? 'card-voice-update-btn card-voice-update-btn--listening'
-    : voiceState === 'processing'
-      ? 'card-voice-update-btn card-voice-update-btn--processing'
-      : 'card-voice-update-btn'
 
   /* ── Group picker actions ─────────────────────────────── */
   function assignGroup(g) {
@@ -169,10 +162,8 @@ export default function PatientCard({
 
         {/* Card content */}
         <div className="card-body">
+          {/* Name row with inline action buttons */}
           <div className="card-top-row">
-            <div className="patient-avatar-icon">
-              <User size={20} />
-            </div>
             <div className="patient-name-block">
               <h3 className="patient-name">
                 {patient.name}
@@ -182,7 +173,34 @@ export default function PatientCard({
                 <span className="patient-age">{patient.age} years old</span>
               )}
             </div>
+
             {tagColor && <span className={`card-tag-dot card-tag-dot--${tagColor}`} />}
+
+            {/* Edit button — icon only, inline with name */}
+            <button
+              className="card-inline-btn"
+              onClick={e => { e.stopPropagation(); onEdit(patient) }}
+              title="Edit patient"
+            >
+              <Pencil size={13} />
+            </button>
+
+            {/* Voice update button — icon only, inline */}
+            {voiceState === 'idle' && (
+              <button className="card-inline-btn" onClick={startVoiceUpdate} title="Voice update">
+                <Mic size={13} />
+              </button>
+            )}
+            {voiceState === 'listening' && (
+              <button className="card-inline-btn card-inline-btn--recording" onClick={stopVoiceUpdate} title="Stop recording">
+                <MicOff size={13} />
+              </button>
+            )}
+            {voiceState === 'processing' && (
+              <button className="card-inline-btn" disabled title="Parsing…">
+                <Loader2 size={13} className="spin" />
+              </button>
+            )}
           </div>
 
           {/* Note snippet */}
@@ -303,32 +321,11 @@ export default function PatientCard({
             </div>
           )}
 
-          {/* Actions row */}
+          {/* Expand toggle — icon only */}
           <div className="card-actions">
-            <button className="card-expand-btn" onClick={toggleExpand}>
-              {expanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-              {expanded ? 'Less' : 'Details'}
+            <button className="card-expand-btn" onClick={toggleExpand} title={expanded ? 'Collapse' : 'Show details'}>
+              {expanded ? <Minus size={13} /> : <Plus size={13} />}
             </button>
-
-            <button className="card-edit-btn" onClick={e => { e.stopPropagation(); onEdit(patient) }} title="Edit patient">
-              <Pencil size={12} /> Edit
-            </button>
-
-            {voiceState === 'idle' && (
-              <button className={voiceBtnClass} onClick={startVoiceUpdate}>
-                <Mic size={12} /> Update
-              </button>
-            )}
-            {voiceState === 'listening' && (
-              <button className={voiceBtnClass} onClick={stopVoiceUpdate}>
-                <MicOff size={12} /> Stop
-              </button>
-            )}
-            {voiceState === 'processing' && (
-              <button className={voiceBtnClass} disabled>
-                <Loader2 size={12} className="spin" /> Parsing…
-              </button>
-            )}
           </div>
         </div>
       </div>

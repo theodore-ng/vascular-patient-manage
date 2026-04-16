@@ -569,31 +569,31 @@ body {
 .card-actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-top: 10px;
-  padding-top: 8px;
+  justify-content: center;
+  margin-top: 8px;
+  padding-top: 6px;
   border-top: 1px solid var(--border);
 }
 
 .card-expand-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
   background: none;
-  border: none;
-  color: var(--text-secondary);
-  font-size: 0.72rem;
-  font-weight: 500;
-  cursor: pointer;
-  padding: 3px 6px;
+  border: 1px solid var(--border);
   border-radius: 6px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
   transition: all .12s;
-  font-family: inherit;
 }
 
 .card-expand-btn:hover {
   background: var(--bg);
   color: var(--text-primary);
+  border-color: var(--border-strong);
 }
 
 .card-voice-update-btn {
@@ -1290,12 +1290,57 @@ body {
   justify-content: center;
   cursor: pointer;
   box-shadow: var(--shadow-md);
-  transition: box-shadow .15s, transform .12s;
+  transition: box-shadow .15s, transform .2s ease;
 }
 
 .fab-text-btn:hover {
   box-shadow: var(--shadow-lg);
   transform: scale(1.06);
+}
+
+.fab-text-btn--open {
+  transform: rotate(45deg);
+}
+.fab-text-btn--open:hover {
+  transform: rotate(45deg) scale(1.06);
+}
+
+/* ── FAB option menu ─────────────────────────────────────────────── */
+.fab-options {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.fab-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  padding: 8px 16px 8px 12px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--text-primary);
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  white-space: nowrap;
+  animation: fab-option-in .15s ease;
+  transition: background .12s, color .12s, border-color .12s;
+}
+
+.fab-option:hover {
+  background: var(--primary-light);
+  color: var(--primary);
+  border-color: rgba(37,99,235,.25);
+}
+
+@keyframes fab-option-in {
+  from { opacity: 0; transform: translateY(6px) scale(.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 /* ── Patient Form Modal ──────────────────────────────────────────── */
@@ -1392,27 +1437,39 @@ body {
 }
 .pf-btn--submit:hover { opacity: .9; }
 
-/* ── Card edit button ────────────────────────────────────────────── */
-.card-edit-btn {
+/* ── Card inline action buttons (edit / voice — icon only, inline with name) ── */
+.card-inline-btn {
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 3px 9px;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
   border-radius: 6px;
   border: 1px solid var(--border);
   background: transparent;
-  color: var(--text-secondary);
-  font-size: 0.72rem;
-  font-weight: 500;
-  font-family: inherit;
+  color: var(--text-muted);
   cursor: pointer;
-  transition: background .15s, color .15s, border-color .15s;
+  transition: background .12s, color .12s, border-color .12s;
+  padding: 0;
 }
 
-.card-edit-btn:hover {
+.card-inline-btn:hover:not(:disabled) {
   background: var(--primary-light);
   color: var(--primary);
-  border-color: var(--primary);
+  border-color: rgba(37,99,235,.25);
+}
+
+.card-inline-btn--recording {
+  background: var(--accent-light);
+  color: var(--accent);
+  border-color: rgba(239,68,68,.3);
+  animation: mic-pulse 1.5s ease-in-out infinite;
+}
+
+.card-inline-btn:disabled {
+  opacity: .5;
+  cursor: not-allowed;
 }
 
 /* ── Responsive ─────────────────────────────────────────────────── */
