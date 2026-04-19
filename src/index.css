@@ -449,15 +449,23 @@ body {
   -webkit-backdrop-filter: none;
 }
 
-.drag-handle {
+.card-left-note-btn {
   flex-shrink: 0;
-  color: var(--border-strong);
-  cursor: grab;
-  padding: 2px 0;
-  margin-top: 1px;
-  transition: color .15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background .15s, color .15s;
+  margin-top: 0;
 }
-.drag-handle:hover { color: var(--text-muted); }
+.card-left-note-btn:hover { background: var(--bg); color: var(--primary); }
+.card-left-note-btn--active { background: var(--primary-light); color: var(--primary); }
 
 .queue-badge {
   flex-shrink: 0;

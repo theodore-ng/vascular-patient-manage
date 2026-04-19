@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import {
-  GripVertical, Activity, Heart, Scan,
+  Activity, Heart, Scan,
   Trash2, Plus, Minus, Mic, MicOff, Loader2, Pencil,
   LogOut, Archive, Tag, Layers, FileText, X, Check,
 } from 'lucide-react'
@@ -105,8 +105,10 @@ export default function PatientCard({
   return (
     <div
       ref={sortableRef}
-      style={sortableStyle}
+      style={{ ...sortableStyle, touchAction: 'none' }}
       className={`patient-card-wrapper ${isDragging ? 'dragging' : ''} ${selected ? 'selected' : ''}`}
+      {...attributes}
+      {...listeners}
     >
       {/* ── Left action panel (right swipe →) ── */}
       <div className={`swipe-actions-left ${openSide === 'right' ? 'swipe-actions--visible' : ''}`}>
@@ -141,10 +143,14 @@ export default function PatientCard({
         style={cardStyle}
         onClick={() => { if (openSide) { close(); return } onSelect(patient) }}
       >
-        {/* Drag handle */}
-        <div className="drag-handle" {...attributes} {...listeners}>
-          <GripVertical size={18} />
-        </div>
+        {/* Note button — left side */}
+        <button
+          className={`card-left-note-btn ${noteOpen ? 'card-left-note-btn--active' : ''}`}
+          onClick={e => { e.stopPropagation(); setNoteOpen(v => !v); if (!noteOpen) setNoteText(patient.note || '') }}
+          title="Add / edit note"
+        >
+          <FileText size={16} />
+        </button>
 
         {/* Queue badge */}
         <div className="queue-badge">{index + 1}</div>
