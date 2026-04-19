@@ -97,9 +97,9 @@ src/
 └── components/
     ├── VoiceInput.jsx        # headless voice recorder; controlled via startRef/stopRef
     ├── PatientFormModal.jsx  # add / edit patient fields modal
-    ├── PatientQueue.jsx      # DndContext + SortableContext; display-only (no filter UI)
+    ├── PatientQueue.jsx      # DndContext + SortableContext; owns filter toolbar + filter state
     ├── PatientHistory.jsx    # discharged patients list with restore
-    ├── Sidebar.jsx           # left nav + expandable Filters panel
+    ├── Sidebar.jsx           # left nav (Queue, History, Reports, AI Consultant, Tools, Settings)
     ├── ConsultPanel.jsx      # AI consultant chat (right column on desktop)
     ├── PatientCard.jsx       # compact card with inline edit, voice, note, expand
     └── ToolsPanel.jsx        # AI auto-group tool
@@ -113,8 +113,9 @@ src/
 │ (220px)    │       (1fr)          │   (380px)    │
 │            │                      │              │
 │ nav items  │  PatientQueue /      │ ConsultPanel │
-│ + Filters  │  History / Tools     │  (always on) │
-│   panel    │                      │              │
+│            │  History / Tools     │  (always on) │
+│            │  (filter toolbar in  │              │
+│            │   PatientQueue)      │              │
 └────────────┴──────────────────────┴──────────────┘
 ```
 
@@ -141,9 +142,10 @@ shown full-height when "AI Consultant" nav item is selected.
       ↓  Edit btn (per card)           →  PatientFormModal        → App.updatePatient()
       ↓  Mic btn (per card)            →  App.updatePatient()     → Supabase PATCH
 
-[Filters (sidebar)]
+[Filters (queue toolbar)]
       ↓  sortBy / tagFilter / activeGroupFilter live in App.jsx
-      ↓  Sidebar renders controls, PatientQueue applies them (read-only props)
+      ↓  PatientQueue owns filtersOpen state + renders collapsible filter panel
+      ↓  receives filter values + setters as props from App
 
 [History view]
       ↓  Sidebar "History" click  →  currentView='history'  →  PatientHistory rendered
@@ -176,28 +178,29 @@ shown full-height when "AI Consultant" nav item is selected.
 
 ### `src/components/PatientCard.jsx`
 - Left column: note button + queue badge (drag handle, `touch-action: none`) + expand toggle below badge
-- Expand toggle: small grey transparent pill (22×14px), not the old blue circle
+- Expand toggle: small grey transparent pill (22×14px)
 - Drag: `{...listeners}` on badge only; `{...attributes}` (ARIA) on outer wrapper
 - Voice update: inline SpeechRecognition → Groq parse → `onUpdate(id, fields)` (non-null fields only)
+- **Meta row layout**: note snippet on the **left**, group badge + tag dot on the **right** (via `.card-meta-right { margin-left: auto }`)
+- Note styling: yellow sticky-note theme (`#fefce8` bg, amber border/focus, amber Save button)
+- Swipe left → Tag / Group / Note actions; swipe right → Discharge / Archive / Delete
 
 ### `src/components/Sidebar.jsx`
-- Nav sections: **Workspace** (Queue, History, Filters, Reports) · **Tools** (AI Consultant, Tools)
-- "Filters" item (SlidersHorizontal icon): clicking toggles an expandable sub-panel inline
-  - Sub-panel has Sort by, Tag, and Group sections
-  - Blue dot indicator on the item when any filter is active
-  - "Reset all filters" button clears everything
-  - Clicking Filters also switches `currentView` to `'queue'`
-- All filter state (`sortBy`, `tagFilter`, `activeGroupFilter`, `filtersOpen`) lives in `App.jsx`
+- Nav sections: **Workspace** (Queue, History, Reports) · **Tools** (AI Consultant, Tools)
+- No filter controls — filters live inside PatientQueue
+- Reports item marked `soon: true` (disabled)
 
 ### `src/components/PatientQueue.jsx`
-- **Display-only** — no filter UI of its own
-- Receives `sortBy`, `tagFilter`, `activeGroupFilter` as read-only props from App
+- Owns `filtersOpen` local state; renders a collapsible filter toolbar above the list
+- Filter toolbar: "Filters" pill button (blue dot when active) + inline "Reset" chip
+- Filter panel sections: Sort by, Tag (red/yellow/green), Group (only if patients have groups)
+- Receives `sortBy`, `onSortChange`, `tagFilter`, `onTagFilterChange`, `activeGroupFilter`, `onGroupFilterChange` from App
 - DnD disabled when any filter is active (`isDndEnabled` check)
 
 ### `src/App.jsx`
 - `SUPABASE_ENABLED` — compile-time boolean, controls all DB calls
 - `currentView` — `'queue' | 'history' | 'consult' | 'tools'`
-- Filter state: `sortBy`, `tagFilter`, `activeGroupFilter`, `filtersOpen`
+- Filter state: `sortBy`, `tagFilter`, `activeGroupFilter` (no `filtersOpen` — that lives in PatientQueue)
 - **Soft-delete**: `removePatient` sets `status='discharged'` in Supabase → appends to `history[]`
 - `restorePatient(patient)` — moves record back to `status='queue'`
 - All Supabase writes are fire-and-forget (`.then(({ error }) => ...)`)
