@@ -202,17 +202,19 @@ export default function PatientCard({
 
           </div>
 
-          {/* Meta row: tag · group · note — only shown when at least one exists */}
+          {/* Meta row: note (left) · group + tag (right) */}
           {(tagColor || groupLabel || (patient.note && !noteOpen)) && (
             <div className="card-meta-row">
-              {tagColor && <span className={`card-tag-dot card-tag-dot--${tagColor}`} />}
-              {groupLabel && <span className="card-group-badge">{groupLabel}</span>}
               {patient.note && !noteOpen && (
                 <span className="card-note-snippet">
                   <FileText size={11} />
                   <span>{patient.note}</span>
                 </span>
               )}
+              <div className="card-meta-right">
+                {groupLabel && <span className="card-group-badge">{groupLabel}</span>}
+                {tagColor && <span className={`card-tag-dot card-tag-dot--${tagColor}`} />}
+              </div>
             </div>
           )}
 

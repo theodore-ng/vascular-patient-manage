@@ -708,13 +708,21 @@ body {
   border-color: var(--border-strong);
 }
 
-/* ── Card meta row (tag · group · note indicators) ──────────────── */
+/* ── Card meta row (note left · group+tag right) ─────────────────── */
 .card-meta-row {
   display: flex;
   align-items: center;
   gap: 6px;
   margin-top: 6px;
   flex-wrap: wrap;
+}
+
+.card-meta-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .card-voice-update-btn {
@@ -1692,7 +1700,6 @@ body {
   height: 10px;
   border-radius: 50%;
   flex-shrink: 0;
-  margin-left: auto;
 }
 .card-tag-dot--red    { background: #ef4444; }
 .card-tag-dot--yellow { background: #eab308; }
