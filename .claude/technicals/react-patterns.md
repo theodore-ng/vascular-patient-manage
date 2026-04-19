@@ -63,23 +63,46 @@ const [fabOpen, setFabOpen] = useState(false)
 
 ---
 
-## Lifting filter state to a shared ancestor
+## Filter state: shared values, local UI
 
-**Problem:** Filter controls (sort, tag, group) were local state inside `PatientQueue`. Moving them to the sidebar required access from both the sidebar (to render controls) and the queue (to apply filters).  
-**Fix:** Lift `sortBy`, `tagFilter`, `activeGroupFilter` to `App.jsx`. Pass values and setters to the sidebar for rendering; pass values only (read-only) to `PatientQueue` for filtering. `PatientQueue` becomes a pure display component with no filter UI of its own.
+**Current pattern:** Filter *values* (`sortBy`, `tagFilter`, `activeGroupFilter`) live in `App.jsx` so they survive view changes and can be reset from anywhere. Filter *UI state* (`filtersOpen`) lives locally in `PatientQueue` because nothing outside the queue cares about it.
 
-**State ownership:**
 ```
 App.jsx
   ├── sortBy, setSortBy
   ├── tagFilter, setTagFilter
   ├── activeGroupFilter, setActiveGroupFilter
-  ├── filtersOpen, setFiltersOpen
   │
-  ├── Sidebar (receives all + setters → renders filter panel)
-  └── PatientQueue (receives values only → applies filter/sort logic)
+  └── PatientQueue
+        ├── filtersOpen (local useState — UI only)
+        ├── receives values + setters from App
+        └── owns the collapsible filter toolbar JSX
 ```
-**Rule:** When two sibling subtrees need the same state, lift it to their lowest common ancestor.
+
+**Rule:** Lift state only as high as the lowest component that *needs* it. Values consumed by multiple subtrees → lift to ancestor. UI toggle state used by one component → keep local.
+
+**History:** filters were once lifted all the way to `App` and rendered in the Sidebar. When filters moved back into the queue panel, `filtersOpen` was kept local since nothing outside PatientQueue reads it.
+
+---
+
+## Left/right split in a flex row without a spacer element
+
+**Pattern:** To pin some items to the left and others to the right inside the same flex row, wrap the right-side group in a div with `margin-left: auto`. No extra spacer element or `justify-content: space-between` needed.
+
+```css
+.row { display: flex; align-items: center; gap: 6px; }
+.row-right { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+```
+```jsx
+<div className="row">
+  <span>Left content</span>          {/* stays left */}
+  <div className="row-right">
+    <span>Right A</span>
+    <span>Right B</span>
+  </div>
+</div>
+```
+**Used in:** `.card-meta-row` — note snippet on left, group badge + tag dot on right via `.card-meta-right`.
 
 ---
 
