@@ -25,6 +25,7 @@ function App() {
   const [patientForm, setPatientForm] = useState(null) // null | { mode: 'add' } | { mode: 'edit', patient }
   const [activeGroupFilter, setActiveGroupFilter] = useState(null)
   const [sortBy, setSortBy] = useState('queue')
+  const [tagFilter, setTagFilter] = useState(null)
   const [fabOpen, setFabOpen] = useState(false)
   const [voiceStatus, setVoiceStatus] = useState('idle')
   const voiceStartRef = useRef(null)
@@ -277,10 +278,13 @@ function App() {
             }}
             onUpdate={updatePatient}
             onEdit={(patient) => setPatientForm({ mode: 'edit', patient })}
+            onTag={tagPatient}
             onSetGroup={setPatientGroup}
             onNote={notePatient}
             sortBy={sortBy}
             onSortChange={setSortBy}
+            tagFilter={tagFilter}
+            onTagFilterChange={setTagFilter}
             activeGroupFilter={activeGroupFilter}
             onGroupFilterChange={setActiveGroupFilter}
           />

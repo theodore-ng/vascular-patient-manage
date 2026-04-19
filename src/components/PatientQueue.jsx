@@ -25,10 +25,14 @@ const SORT_OPTIONS = [
   { key: 'age-desc',  label: 'Age oldest'   },
 ]
 
+const TAG_COLORS = ['red', 'yellow', 'green']
+const TAG_LABELS  = { red: 'Red', yellow: 'Yellow', green: 'Green' }
+
 export default function PatientQueue({
   patients, selectedId, onSelect, onReorder, onDischarge, onDelete,
-  onUpdate, onEdit, onSetGroup, onNote,
-  sortBy, onSortChange, activeGroupFilter, onGroupFilterChange,
+  onUpdate, onEdit, onTag, onSetGroup, onNote,
+  sortBy, onSortChange, tagFilter, onTagFilterChange,
+  activeGroupFilter, onGroupFilterChange,
 }) {
   const [filtersOpen, setFiltersOpen] = useState(false)
   const sensors = useSensors(
@@ -39,6 +43,7 @@ export default function PatientQueue({
   /* ── Derive display list ─────────────────── */
   let display = patients
   if (activeGroupFilter) display = display.filter(p => p.group === activeGroupFilter)
+  if (tagFilter)         display = display.filter(p => p.tag   === tagFilter)
   if (sortBy !== 'queue') {
     display = [...display].sort((a, b) => {
       if (sortBy === 'name-asc')  return (a.name || '').localeCompare(b.name || '')
@@ -49,7 +54,7 @@ export default function PatientQueue({
     })
   }
 
-  const isDndEnabled = !activeGroupFilter && sortBy === 'queue'
+  const isDndEnabled = !activeGroupFilter && !tagFilter && sortBy === 'queue'
 
   function handleDragEnd(event) {
     const { active, over } = event
@@ -70,13 +75,14 @@ export default function PatientQueue({
       onDelete={onDelete}
       onUpdate={onUpdate}
       onEdit={onEdit}
+      onTag={onTag}
       onSetGroup={onSetGroup}
       onNote={onNote}
     />
   ))
 
   const activeGroups = VASCULAR_GROUPS.filter(g => patients.some(p => p.group === g))
-  const hasActiveFilter = sortBy !== 'queue' || activeGroupFilter
+  const hasActiveFilter = sortBy !== 'queue' || tagFilter || activeGroupFilter
 
   return (
     <div className="patient-queue-wrapper">
@@ -94,7 +100,7 @@ export default function PatientQueue({
         {hasActiveFilter && (
           <button
             className="queue-filter-reset"
-            onClick={() => { onSortChange('queue'); onGroupFilterChange(null) }}
+            onClick={() => { onSortChange('queue'); onTagFilterChange(null); onGroupFilterChange(null) }}
           >
             <X size={12} /> Reset
           </button>
@@ -114,6 +120,26 @@ export default function PatientQueue({
                   onClick={() => onSortChange(opt.key)}
                 >
                   {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="sidebar-filter-section">
+            <span className="sidebar-filter-label">Tag</span>
+            <div className="sidebar-filter-chips">
+              <button
+                className={`sidebar-filter-chip ${!tagFilter ? 'sidebar-filter-chip--active' : ''}`}
+                onClick={() => onTagFilterChange(null)}
+              >All</button>
+              {TAG_COLORS.map(c => (
+                <button
+                  key={c}
+                  className={`sidebar-filter-chip sidebar-filter-chip--tag ${tagFilter === c ? 'sidebar-filter-chip--active' : ''}`}
+                  onClick={() => onTagFilterChange(tagFilter === c ? null : c)}
+                >
+                  <span className={`sf-tag-dot sf-tag-dot--${c}`} />
+                  {TAG_LABELS[c]}
                 </button>
               ))}
             </div>
@@ -146,10 +172,10 @@ export default function PatientQueue({
         <div className="queue-empty glass-panel">
           <Users size={48} strokeWidth={1} />
           <p className="queue-empty-title">
-            {activeGroupFilter ? 'No patients match this filter' : 'No patients in queue'}
+            {(activeGroupFilter || tagFilter) ? 'No patients match this filter' : 'No patients in queue'}
           </p>
           <p className="queue-empty-sub">
-            {activeGroupFilter ? 'Try a different filter' : 'Use the + button to add a patient'}
+            {(activeGroupFilter || tagFilter) ? 'Try a different filter' : 'Use the + button to add a patient'}
           </p>
         </div>
       )}

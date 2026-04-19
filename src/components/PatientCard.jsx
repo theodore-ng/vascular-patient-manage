@@ -4,21 +4,24 @@ import { CSS } from '@dnd-kit/utilities'
 import {
   Activity, Heart, Scan,
   Trash2, Plus, Minus, Mic, MicOff, Loader2, Pencil,
-  LogOut, Archive, Layers, FileText, X, Check,
+  LogOut, Archive, Tag, Layers, FileText, X, Check,
 } from 'lucide-react'
 import { useSwipeRemove } from '../hooks/useSwipeRemove'
 import { parsePatientTranscript, VASCULAR_GROUPS } from '../services/groq'
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
 
+const TAG_COLORS = ['red', 'yellow', 'green']
+
 export default function PatientCard({
   patient, index, selected,
-  onSelect, onDischarge, onDelete, onUpdate, onEdit, onSetGroup, onNote,
+  onSelect, onDischarge, onDelete, onUpdate, onEdit, onTag, onSetGroup, onNote,
 }) {
   const [expanded, setExpanded]               = useState(false)
   const [voiceState, setVoiceState]           = useState('idle')
   const [noteOpen, setNoteOpen]               = useState(false)
   const [noteText, setNoteText]               = useState(patient.note || '')
+  const [tagPickerOpen, setTagPickerOpen]     = useState(false)
   const [groupPickerOpen, setGroupPickerOpen] = useState(false)
   const transcriptRef  = useRef('')
   const recognitionRef = useRef(null)
@@ -96,6 +99,7 @@ export default function PatientCard({
     setGroupPickerOpen(false)
   }
 
+  const tagColor   = patient.tag   || null
   const groupLabel = patient.group || null
 
   return (
@@ -120,6 +124,9 @@ export default function PatientCard({
 
       {/* ── Right action panel (left swipe ←) ── */}
       <div className={`swipe-actions-right ${openSide === 'left' ? 'swipe-actions--visible' : ''}`}>
+        <button className="swipe-action-btn swipe-action-btn--tag" onClick={() => act(() => setTagPickerOpen(true))}>
+          <Tag size={18} /><span>Tag</span>
+        </button>
         <button className="swipe-action-btn swipe-action-btn--group" onClick={() => act(() => setGroupPickerOpen(true))}>
           <Layers size={18} /><span>Group</span>
         </button>
@@ -131,7 +138,7 @@ export default function PatientCard({
       {/* ── The actual sliding card ───────────── */}
       <div
         ref={swipeRef}
-        className={`patient-card glass-panel ${selected ? 'patient-card--selected' : ''}`}
+        className={`patient-card glass-panel ${selected ? 'patient-card--selected' : ''} ${tagColor ? `patient-card--tag-${tagColor}` : ''}`}
         style={cardStyle}
         onClick={() => { if (openSide) { close(); return } onSelect(patient) }}
       >
@@ -158,7 +165,7 @@ export default function PatientCard({
 
         {/* Card content */}
         <div className="card-body">
-          {/* Name row: name/age · edit · mic */}
+          {/* Name row: name/age · edit · mic · expand (right end) */}
           <div className="card-top-row">
             <div className="patient-name-block">
               <h3 className="patient-name">{patient.name}</h3>
@@ -167,6 +174,7 @@ export default function PatientCard({
               )}
             </div>
 
+            {/* Edit button */}
             <button
               className="card-inline-btn"
               onClick={e => { e.stopPropagation(); onEdit(patient) }}
@@ -175,6 +183,7 @@ export default function PatientCard({
               <Pencil size={13} />
             </button>
 
+            {/* Voice update button */}
             {voiceState === 'idle' && (
               <button className="card-inline-btn" onClick={startVoiceUpdate} title="Voice update">
                 <Mic size={13} />
@@ -190,11 +199,13 @@ export default function PatientCard({
                 <Loader2 size={13} className="spin" />
               </button>
             )}
+
           </div>
 
-          {/* Meta row: group · note */}
-          {(groupLabel || (patient.note && !noteOpen)) && (
+          {/* Meta row: tag · group · note — only shown when at least one exists */}
+          {(tagColor || groupLabel || (patient.note && !noteOpen)) && (
             <div className="card-meta-row">
+              {tagColor && <span className={`card-tag-dot card-tag-dot--${tagColor}`} />}
               {groupLabel && <span className="card-group-badge">{groupLabel}</span>}
               {patient.note && !noteOpen && (
                 <span className="card-note-snippet">
@@ -202,6 +213,27 @@ export default function PatientCard({
                   <span>{patient.note}</span>
                 </span>
               )}
+            </div>
+          )}
+
+          {/* Inline tag color picker */}
+          {tagPickerOpen && (
+            <div className="card-tag-picker" onClick={e => e.stopPropagation()}>
+              {TAG_COLORS.map(c => (
+                <button
+                  key={c}
+                  className={`tag-pick-dot tag-pick-dot--${c} ${patient.tag === c ? 'tag-pick-dot--active' : ''}`}
+                  onClick={() => { onTag(patient.id, patient.tag === c ? null : c); setTagPickerOpen(false) }}
+                  title={c}
+                />
+              ))}
+              <button
+                className="tag-pick-dot tag-pick-dot--clear"
+                onClick={() => { onTag(patient.id, null); setTagPickerOpen(false) }}
+                title="Clear tag"
+              >
+                <X size={10} />
+              </button>
             </div>
           )}
 
