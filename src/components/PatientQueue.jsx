@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import {
   DndContext,
   closestCenter,
@@ -15,26 +14,12 @@ import {
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers'
 import { Users } from 'lucide-react'
 import PatientCard from './PatientCard'
-import { VASCULAR_GROUPS } from '../services/groq'
-
-const SORT_OPTIONS = [
-  { key: 'queue',      label: 'Queue'    },
-  { key: 'name-asc',   label: 'Name A→Z' },
-  { key: 'name-desc',  label: 'Name Z→A' },
-  { key: 'age-asc',    label: 'Age ↑'    },
-  { key: 'age-desc',   label: 'Age ↓'    },
-]
-
-const TAG_COLORS = ['red', 'yellow', 'green']
 
 export default function PatientQueue({
   patients, selectedId, onSelect, onReorder, onDischarge, onDelete,
   onUpdate, onEdit, onTag, onSetGroup, onNote,
-  activeGroupFilter, onFilterChange,
+  sortBy, tagFilter, activeGroupFilter,
 }) {
-  const [sortBy, setSortBy]       = useState('queue')
-  const [tagFilter, setTagFilter] = useState(null)
-
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
     useSensor(TouchSensor,   { activationConstraint: { delay: 200, tolerance: 5 } })
@@ -64,9 +49,6 @@ export default function PatientQueue({
     onReorder(arrayMove(patients, oldIndex, newIndex))
   }
 
-  /* ── Groups present in current queue ─────── */
-  const activeGroups = VASCULAR_GROUPS.filter(g => patients.some(p => p.group === g))
-
   const cards = display.map((patient, index) => (
     <PatientCard
       key={patient.id}
@@ -86,67 +68,6 @@ export default function PatientQueue({
 
   return (
     <div className="patient-queue-wrapper">
-      {/* Sort + tag filter panel */}
-      <div className="queue-filter-panel">
-        <div className="queue-filter-section">
-          <span className="queue-filter-label">Sort by</span>
-          <div className="queue-filter-chips">
-            {SORT_OPTIONS.map(opt => (
-              <button
-                key={opt.key}
-                className={`queue-filter-chip ${sortBy === opt.key ? 'queue-filter-chip--active' : ''}`}
-                onClick={() => setSortBy(opt.key)}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="queue-filter-divider" />
-        <div className="queue-filter-section">
-          <span className="queue-filter-label">Tag</span>
-          <div className="queue-filter-chips">
-            <button
-              className={`queue-filter-chip ${!tagFilter ? 'queue-filter-chip--active' : ''}`}
-              onClick={() => setTagFilter(null)}
-            >
-              All
-            </button>
-            {TAG_COLORS.map(c => (
-              <button
-                key={c}
-                className={`queue-filter-chip queue-filter-chip--tag ${tagFilter === c ? 'queue-filter-chip--active' : ''}`}
-                onClick={() => setTagFilter(tagFilter === c ? null : c)}
-              >
-                <span className={`queue-tag-dot queue-tag-dot--${c}`} />
-                {c.charAt(0).toUpperCase() + c.slice(1)}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Group filter chips — only groups that have patients */}
-      {activeGroups.length > 0 && (
-        <div className="group-filter-row">
-          <button
-            className={`group-filter-chip ${!activeGroupFilter ? 'group-filter-chip--active' : ''}`}
-            onClick={() => onFilterChange(null)}
-          >
-            All
-          </button>
-          {activeGroups.map(g => (
-            <button
-              key={g}
-              className={`group-filter-chip ${activeGroupFilter === g ? 'group-filter-chip--active' : ''}`}
-              onClick={() => onFilterChange(activeGroupFilter === g ? null : g)}
-            >
-              {g}
-            </button>
-          ))}
-        </div>
-      )}
-
       {display.length === 0 && (
         <div className="queue-empty glass-panel">
           <Users size={48} strokeWidth={1} />
