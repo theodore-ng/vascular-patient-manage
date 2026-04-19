@@ -105,10 +105,9 @@ export default function PatientCard({
   return (
     <div
       ref={sortableRef}
-      style={{ ...sortableStyle, touchAction: 'none' }}
+      style={sortableStyle}
       className={`patient-card-wrapper ${isDragging ? 'dragging' : ''} ${selected ? 'selected' : ''}`}
       {...attributes}
-      {...listeners}
     >
       {/* ── Left action panel (right swipe →) ── */}
       <div className={`swipe-actions-left ${openSide === 'right' ? 'swipe-actions--visible' : ''}`}>
@@ -152,8 +151,8 @@ export default function PatientCard({
           <FileText size={16} />
         </button>
 
-        {/* Queue badge */}
-        <div className="queue-badge">{index + 1}</div>
+        {/* Queue badge — drag handle */}
+        <div className="queue-badge" {...listeners} style={{ touchAction: 'none', cursor: 'grab' }}>{index + 1}</div>
 
         {/* Card content */}
         <div className="card-body">

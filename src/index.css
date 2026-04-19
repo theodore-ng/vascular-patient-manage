@@ -40,12 +40,21 @@ body {
   overflow: hidden;
 }
 
-/* ── 2-Column Shell ─────────────────────────────────────────────── */
+/* ── 3-Column Shell ─────────────────────────────────────────────── */
 .app-root {
   display: grid;
-  grid-template-columns: var(--sidebar-w) 1fr;
+  grid-template-columns: var(--sidebar-w) 1fr var(--right-w);
   height: 100dvh;
   overflow: hidden;
+}
+
+/* ── RIGHT — AI Consultant panel ───────────────────────────────── */
+.app-right-panel {
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border);
+  overflow: hidden;
+  background: var(--surface);
 }
 
 /* ── LEFT — Sidebar ─────────────────────────────────────────────── */
@@ -1396,7 +1405,7 @@ body {
 .fab-group {
   position: fixed;
   bottom: 28px;
-  right: 24px;
+  right: calc(var(--right-w) + 24px);
   z-index: 200;
   display: flex;
   flex-direction: column;
@@ -1619,7 +1628,7 @@ body {
   .sidebar-nav-item { justify-content: center; padding: 10px; }
   .sidebar-user { justify-content: center; padding: 10px 0 0; }
 
-  .fab-group { right: 24px; }
+  .fab-group { right: calc(var(--right-w) + 20px); }
 }
 
 @media (max-width: 720px) {
@@ -1630,32 +1639,52 @@ body {
 
   .app-root {
     grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr auto;
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      "nav"
+      "main";
     height: 100dvh;
   }
 
   .sidebar {
+    grid-area: nav;
     flex-direction: row;
-    padding: 10px 14px;
+    padding: 8px 12px;
     border-right: none;
     border-bottom: 1px solid var(--border);
     overflow-x: auto;
   }
 
-  .sidebar-logo, .sidebar-section-label, .sidebar-footer, .sidebar-user { display: none; }
-  .sidebar-nav { flex-direction: row; gap: 4px; }
-  .sidebar-nav-item span { display: none; }
-  .sidebar-nav-item { padding: 8px; border-radius: 8px; }
+  .center-col { grid-area: main; }
 
-  .consult-panel {
-    height: 50dvh;
+  /* Right panel: hidden by default, overlays main area when active */
+  .app-right-panel {
+    grid-area: main;
+    display: none;
     border-left: none;
     border-top: 1px solid var(--border);
   }
-
-  .consult-panel--collapsed {
-    height: auto;
+  .app-right-panel--mobile-active {
+    display: flex;
+    flex-direction: column;
   }
+
+  .sidebar-logo, .sidebar-section-label, .sidebar-footer, .sidebar-user { display: none; }
+  .sidebar-nav {
+    flex-direction: row;
+    gap: 0;
+    width: 100%;
+  }
+  .sidebar-nav-item {
+    flex: 1;
+    justify-content: center;
+    padding: 8px 4px;
+    border-radius: 8px;
+  }
+  .sidebar-nav-item span { display: none; }
+
+  /* Sidebar filter panel on mobile — make it scrollable if content overflows */
+  .sidebar-filter-panel { max-height: 50vh; overflow-y: auto; }
 
   .fab-group {
     right: 20px;

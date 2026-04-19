@@ -300,14 +300,17 @@ function App() {
             history={history}
             onRestore={restorePatient}
           />
-        ) : currentView === 'consult' ? (
-          <ConsultPanel selectedPatient={selectedPatient} standalone />
-        ) : (
+        ) : currentView === 'tools' ? (
           <ToolsPanel
             patients={patients}
             onApplyAutoGroups={applyAutoGroups}
           />
-        )}
+        ) : null}
+      </div>
+
+      {/* Right panel — AI Consultant (desktop always; mobile only when consult view) */}
+      <div className={`app-right-panel ${currentView === 'consult' ? 'app-right-panel--mobile-active' : ''}`}>
+        <ConsultPanel selectedPatient={selectedPatient} />
       </div>
 
       {/* FAB group — only show on queue view */}
