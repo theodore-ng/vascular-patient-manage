@@ -64,12 +64,11 @@ create table patients (
   position              integer     not null default 0,
   status                text        not null default 'queue',   -- 'queue' | 'discharged'
   discharged_at         timestamptz,
+  tag                   text,
+  group_name            text,
+  note                  text,
   created_at            timestamptz default now()
 );
-
--- Migration for existing tables:
--- alter table patients add column if not exists status text not null default 'queue';
--- alter table patients add column if not exists discharged_at timestamptz;
 ```
 
 **RLS:** If Row Level Security is enabled, add a policy allowing anon reads/writes,
@@ -81,30 +80,46 @@ or use the service-role key server-side.
 
 ```
 src/
-├── main.jsx                     # React root mount
-├── App.jsx                      # State hub: patients[], history[], add / remove / restore / reorder / update
-├── index.css                    # Single stylesheet — all design tokens & components
+├── main.jsx
+├── App.jsx                  # State hub: patients[], history[], filters, layout state
+├── index.css                # Single stylesheet — all design tokens & components
 │
 ├── lib/
-│   └── supabase.js              # createClient() — URL + anon key from env
+│   └── supabase.js          # createClient() — URL + anon key from env
 │
 ├── services/
-│   └── groq.js                  # parsePatientTranscript(text) → PatientFields
-│                                #   reads key from env → localStorage fallback
+│   └── groq.js              # parsePatientTranscript() · autoGroupPatients() · VASCULAR_GROUPS
 │
 ├── hooks/
-│   └── useSwipeRemove.js        # pointer/touch → translateX state → onRemove()
-│                                #   threshold: 120 px rightward
+│   └── useSwipeRemove.js    # pointer/touch → translateX state → onRemove()
+│                            #   threshold: 120 px rightward
 │
 └── components/
-    ├── VoiceInput.jsx           # mic FAB, SpeechRecognition, transcript display
-    ├── PatientFormModal.jsx     # text form modal — add new or edit existing patient
-    ├── PatientQueue.jsx         # DndContext + SortableContext wrapper
-    ├── PatientHistory.jsx       # list of discharged patients with restore button
-    ├── Sidebar.jsx              # left nav (220px); Queue + History active, rest "Soon"
-    ├── ConsultPanel.jsx         # right AI panel (380px), structured clinical prompt
-    └── PatientCard.jsx          # compact card (name+age), expand chevron, edit btn, per-card voice update
+    ├── VoiceInput.jsx        # headless voice recorder; controlled via startRef/stopRef
+    ├── PatientFormModal.jsx  # add / edit patient fields modal
+    ├── PatientQueue.jsx      # DndContext + SortableContext; display-only (no filter UI)
+    ├── PatientHistory.jsx    # discharged patients list with restore
+    ├── Sidebar.jsx           # left nav + expandable Filters panel
+    ├── ConsultPanel.jsx      # AI consultant chat (right column on desktop)
+    ├── PatientCard.jsx       # compact card with inline edit, voice, note, expand
+    └── ToolsPanel.jsx        # AI auto-group tool
 ```
+
+### Layout (3-column, desktop)
+
+```
+┌────────────┬──────────────────────┬──────────────┐
+│  Sidebar   │    Center column     │  Right panel │
+│ (220px)    │       (1fr)          │   (380px)    │
+│            │                      │              │
+│ nav items  │  PatientQueue /      │ ConsultPanel │
+│ + Filters  │  History / Tools     │  (always on) │
+│   panel    │                      │              │
+└────────────┴──────────────────────┴──────────────┘
+```
+
+On mobile (≤720px): single column, sidebar becomes a top icon bar, ConsultPanel
+shown full-height when "AI Consultant" nav item is selected.
 
 ### Data flow
 
@@ -121,11 +136,14 @@ src/
       ↓  App.addPatient() or App.updatePatient()
 
 [PatientCard rendered in queue]
-      ↓  drag handle (@dnd-kit)        →  App.reorderPatients()  → Supabase position updates
+      ↓  queue badge hold (@dnd-kit)   →  App.reorderPatients()  → Supabase position updates
       ↓  swipe right (useSwipeRemove)  →  App.removePatient()    → Supabase soft-delete
-                                                                     (status='discharged', discharged_at=now())
       ↓  Edit btn (per card)           →  PatientFormModal        → App.updatePatient()
-      ↓  "Update" mic btn (per card)   →  App.updatePatient()     → Supabase PATCH changed fields only
+      ↓  Mic btn (per card)            →  App.updatePatient()     → Supabase PATCH
+
+[Filters (sidebar)]
+      ↓  sortBy / tagFilter / activeGroupFilter live in App.jsx
+      ↓  Sidebar renders controls, PatientQueue applies them (read-only props)
 
 [History view]
       ↓  Sidebar "History" click  →  currentView='history'  →  PatientHistory rendered
@@ -140,67 +158,49 @@ src/
 - Sends transcript to `https://api.groq.com/openai/v1/chat/completions`
 - System prompt instructs the model to return **only** a JSON object with five keys
 - JSON parsing has a regex fallback for markdown-wrapped responses
-- Throws `Error('No Groq API key configured')` if no key is available
+- Exports `VASCULAR_GROUPS` — the 9 fixed group names used by Sidebar, PatientCard, ToolsPanel
+- `autoGroupPatients(patients)` — single batch call → `[{ id, group }]`
 
 ### `src/hooks/useSwipeRemove.js`
 - Attaches `pointerdown / pointermove / pointerup` to the card element via `useRef`
 - Cancels tracking if vertical delta exceeds horizontal (scroll protection)
-- Returns `{ ref, translateX, isSwiping }` — card applies these as inline style
-- The red backdrop (`.swipe-remove-bg`) is a sibling element revealed as the card
-  slides right via `translateX`
+- Returns `{ ref, translateX, openSide, close }`
 
 ### `src/components/VoiceInput.jsx`
 - Speech recognition language defaults to `vi-VN` (Vietnamese)
-- To change: set `recognition.lang` in `startListening()`
-- States: `idle → listening → processing → idle | error`
-- **Does not render its own button** — controlled entirely by the parent via refs:
-  - `startRef` — parent calls `startRef.current()` to begin recording
-  - `stopRef`  — parent calls `stopRef.current()` to stop recording
-  - `onStatusChange(status)` — fired on every state transition so parent can show recording FAB
+- **Does not render its own button** — controlled entirely by parent via refs:
+  - `startRef` / `stopRef` — parent calls these to start/stop recording
+  - `onStatusChange(status)` — fired on every state transition
 - Renders only a status pill when active (recording, processing, error)
-- **Critical pattern**: all transcript processing happens in `recognition.onend`, NOT after
-  calling `rec.stop()`. Chrome fires remaining `onresult` events asynchronously after
-  `stop()` returns; `onend` is guaranteed to fire only after all of them complete.
-- Uses `transcriptRef` (not state) to accumulate transcript — avoids stale closures.
-- Uses `onPatientParsedRef` to hold latest callback — avoids stale closure in `onend`.
+- **Critical:** all transcript processing happens in `recognition.onend` — see `technicals/voice-speech.md`
 
 ### `src/components/PatientCard.jsx`
-- Default view shows **name + age only** (compact)
-- **Edit** and **voice update** buttons are icon-only, inline with the name row (no text labels)
-- `+` / `−` icon button at the bottom of the card toggles `.card-details`
-- Voice update runs: inline SpeechRecognition → Groq parse → `onUpdate(id, fields)`
-  - Same `onend`-based pattern as VoiceInput — processing in `recognition.onend`
-  - On update: only fields the AI found (non-null, non-`'—'`) overwrite existing values
-  - On successful parse: auto-expands the details section to show new values
-- `onUpdate` prop flows: `App.updatePatient` → `PatientQueue` → `PatientCard`
-- `onEdit` prop flows: `App` → `PatientQueue` → `PatientCard`
-
-### `src/components/PatientFormModal.jsx`
-- Used for both **add** and **edit** modes (determined by whether `patient` prop is passed)
-- Fields: name (text), age (number), clinicalManifestation, underlyingDisease, imagingDiagnosis (textareas)
-- Edit mode: only non-empty fields are submitted → preserves existing data for blanked fields
-- Add mode: blank fields default to `'—'`
-
-### `src/components/PatientHistory.jsx`
-- Renders discharged patients, newest first
-- Each card shows name, age, discharge timestamp, expandable clinical details
-- **Restore** button calls `App.restorePatient()` → moves patient back to active queue
+- Left column: note button + queue badge (drag handle, `touch-action: none`) + expand toggle below badge
+- Expand toggle: small grey transparent pill (22×14px), not the old blue circle
+- Drag: `{...listeners}` on badge only; `{...attributes}` (ARIA) on outer wrapper
+- Voice update: inline SpeechRecognition → Groq parse → `onUpdate(id, fields)` (non-null fields only)
 
 ### `src/components/Sidebar.jsx`
-- Accepts `currentView` prop and `onViewChange` callback
-- "Patient Queue" and "History" are active nav items; Analytics/Reports are "Soon"
+- Nav sections: **Workspace** (Queue, History, Filters, Reports) · **Tools** (AI Consultant, Tools)
+- "Filters" item (SlidersHorizontal icon): clicking toggles an expandable sub-panel inline
+  - Sub-panel has Sort by, Tag, and Group sections
+  - Blue dot indicator on the item when any filter is active
+  - "Reset all filters" button clears everything
+  - Clicking Filters also switches `currentView` to `'queue'`
+- All filter state (`sortBy`, `tagFilter`, `activeGroupFilter`, `filtersOpen`) lives in `App.jsx`
+
+### `src/components/PatientQueue.jsx`
+- **Display-only** — no filter UI of its own
+- Receives `sortBy`, `tagFilter`, `activeGroupFilter` as read-only props from App
+- DnD disabled when any filter is active (`isDndEnabled` check)
 
 ### `src/App.jsx`
 - `SUPABASE_ENABLED` — compile-time boolean, controls all DB calls
-- `currentView` — `'queue' | 'history'`, drives center column content
-- **Soft-delete**: `removePatient` sets `status='discharged'` + `discharged_at` in Supabase
-  instead of deleting, and appends to local `history[]` state
-- `restorePatient(patient)` — moves record back to `status='queue'`, re-adds to `patients[]`
-- `loadFromSupabase()` fetches queue (`status='queue'`) and history (`status='discharged'`)
-  in parallel via `Promise.all`
+- `currentView` — `'queue' | 'history' | 'consult' | 'tools'`
+- Filter state: `sortBy`, `tagFilter`, `activeGroupFilter`, `filtersOpen`
+- **Soft-delete**: `removePatient` sets `status='discharged'` in Supabase → appends to `history[]`
+- `restorePatient(patient)` — moves record back to `status='queue'`
 - All Supabase writes are fire-and-forget (`.then(({ error }) => ...)`)
-- `crypto.randomUUID()` generates client-side IDs before Supabase insertion
-- `updatePatient(id, fields)` merges new fields; also refreshes `selectedPatient`
 
 ---
 
@@ -233,26 +233,21 @@ Add new component styles at the bottom of the relevant section.
 
 ## FAB Layout
 
-A single **`+` button** (`.fab-text-btn`) is fixed above the right panel. Tapping it opens a mini-menu with two option pills:
+A single **`+` button** (`.fab-text-btn`) floats fixed in the center column. Tapping opens two option pills:
 - **Voice** — triggers `voiceStartRef.current()` → VoiceInput starts recording
 - **Text** — opens `PatientFormModal` in add mode
 
-While recording the `+` is replaced by a pulsing mic stop button (`.voice-fab--recording`).
-While processing it shows a spinner (`.voice-fab--processing`).
+While recording → pulsing mic stop button (`.voice-fab--recording`).  
+While processing → spinner (`.voice-fab--processing`).
 
 ```css
 .fab-group {
   position: fixed;
   bottom: 28px;
-  right: calc(var(--right-w) + 24px);
+  right: calc(var(--right-w) + 24px);  /* stays left of the right panel */
 }
 ```
-The FAB and its menu are hidden when `currentView === 'history'`.
-
-App state that drives the FAB:
-- `fabOpen` — whether the option menu is open
-- `voiceStatus` — mirrored from VoiceInput via `onStatusChange`; `'idle' | 'listening' | 'processing' | 'error'`
-- `voiceStartRef` / `voiceStopRef` — refs wired to VoiceInput's internal functions
+The FAB is only rendered when `currentView === 'queue'`.
 
 ---
 
@@ -260,21 +255,21 @@ App state that drives the FAB:
 
 **Change AI model**
 ```js
-// src/services/groq.js  line 2
+// src/services/groq.js
 const MODEL = 'llama-3.3-70b-versatile'
 ```
 
 **Change speech recognition language**
 ```js
-// src/components/VoiceInput.jsx  inside startListening()
-// src/components/PatientCard.jsx  inside startVoiceUpdate()
+// src/components/VoiceInput.jsx  →  startListening()
+// src/components/PatientCard.jsx →  startVoiceUpdate()
 recognition.lang = 'vi-VN'   // e.g. 'en-US', 'ja-JP'
-// Note: change both — VoiceInput adds new patients, PatientCard updates existing ones
+// Change both — VoiceInput adds patients, PatientCard updates existing ones
 ```
 
 **Adjust swipe distance threshold**
 ```js
-// src/hooks/useSwipeRemove.js  line 4
+// src/hooks/useSwipeRemove.js
 const SWIPE_THRESHOLD = 120   // pixels
 ```
 
@@ -293,17 +288,30 @@ const SWIPE_THRESHOLD = 120   // pixels
 |---|---|
 | Web Speech API | Chrome 25+, Edge 79+ (not Firefox/Safari) |
 | Pointer Events | All modern browsers |
-| CSS backdrop-filter | Chrome 76+, Safari 14+, Edge 79+ |
-
-For Firefox users, voice input will show an error; all other features work.
+| CSS :has() | Chrome 105+, Safari 15.4+, Edge 105+ |
+| interactive-widget viewport | Chrome 108+, Edge 108+ |
 
 ---
 
 ## Deployment Notes
 
 - Deployed to **GitHub Pages** via `.github/workflows/deploy.yml` — auto-deploys on push to `main`
-- Set `VITE_GROQ_API_KEY`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` as **repository secrets** (Settings → Secrets → Actions)
+- Set `VITE_GROQ_API_KEY`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` as **repository secrets**
 - `base: '/vascular-patient-manage/'` is set in `vite.config.js` — required for GitHub Pages subpath
 - Supabase anon key is safe to expose publicly (it's the publishable key)
-- Groq API key should ideally be proxied server-side in production to avoid exposure
 - Build output is in `dist/` — static files, no server required
+
+---
+
+## Technical Notes
+
+Detailed debugging patterns, iOS quirks, and architectural decisions are documented in:
+
+| File | Topics |
+|---|---|
+| [`technicals/mobile-ios.md`](technicals/mobile-ios.md) | Auto-zoom, keyboard FAB, touch-action scroll, nav equal width, grid-area overlap, iOS Speech API |
+| [`technicals/drag-drop.md`](technicals/drag-drop.md) | dnd-kit filter index mismatch, touch-action scope, hold-to-drag delay config |
+| [`technicals/voice-speech.md`](technicals/voice-speech.md) | onend processing, stale closures in event handlers |
+| [`technicals/react-patterns.md`](technicals/react-patterns.md) | startRef/stopRef, FAB menu, filter state lifting, CSS :has() |
+| [`technicals/ai-groq.md`](technicals/ai-groq.md) | Structured extraction, JSON fallback parsing, batch classification |
+| [`technicals/deployment.md`](technicals/deployment.md) | GitHub Pages setup, SSH auth, protecting secrets |
