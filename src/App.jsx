@@ -26,7 +26,6 @@ function App() {
   const [activeGroupFilter, setActiveGroupFilter] = useState(null)
   const [sortBy, setSortBy] = useState('queue')
   const [tagFilter, setTagFilter] = useState(null)
-  const [filtersOpen, setFiltersOpen] = useState(false)
   const [fabOpen, setFabOpen] = useState(false)
   const [voiceStatus, setVoiceStatus] = useState('idle')
   const voiceStartRef = useRef(null)
@@ -254,15 +253,6 @@ function App() {
         currentView={currentView}
         onViewChange={setCurrentView}
         onOpenSettings={openSettings}
-        filtersOpen={filtersOpen}
-        onToggleFilters={() => { setCurrentView('queue'); setFiltersOpen(v => !v) }}
-        sortBy={sortBy}
-        onSortChange={setSortBy}
-        tagFilter={tagFilter}
-        onTagFilterChange={setTagFilter}
-        activeGroupFilter={activeGroupFilter}
-        onGroupFilterChange={setActiveGroupFilter}
-        patients={patients}
       />
 
       {/* Center — Queue or History */}
@@ -292,8 +282,11 @@ function App() {
             onSetGroup={setPatientGroup}
             onNote={notePatient}
             sortBy={sortBy}
+            onSortChange={setSortBy}
             tagFilter={tagFilter}
+            onTagFilterChange={setTagFilter}
             activeGroupFilter={activeGroupFilter}
+            onGroupFilterChange={setActiveGroupFilter}
           />
         ) : currentView === 'history' ? (
           <PatientHistory

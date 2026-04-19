@@ -153,29 +153,8 @@ body {
   cursor: not-allowed;
 }
 
-.sidebar-nav-item--badged { position: relative; }
 
-.filter-active-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--primary);
-  margin-left: auto;
-  flex-shrink: 0;
-}
-
-/* ── Sidebar Filter Panel ───────────────────────────────────────── */
-.sidebar-filter-panel {
-  margin: 4px 0 8px 0;
-  padding: 10px 10px 10px 12px;
-  background: var(--bg);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
+/* ── Filter chips (shared by queue filter panel) ─────────────────── */
 .sidebar-filter-section {
   display: flex;
   flex-direction: column;
@@ -1700,8 +1679,6 @@ body {
   }
   .sidebar-nav-item span { display: none; }
 
-  /* Sidebar filter panel on mobile — make it scrollable if content overflows */
-  .sidebar-filter-panel { max-height: 50vh; overflow-y: auto; }
 
   .fab-group {
     right: 20px;
@@ -1850,10 +1827,83 @@ body {
   margin-top: -2px;
 }
 
-/* ── Group filter chips (top of queue) ───────────────────────────── */
+/* ── Queue filter bar ─────────────────────────────────────────────── */
 .patient-queue-wrapper {
   display: flex;
   flex-direction: column;
+}
+
+.queue-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 0 8px 0;
+}
+
+.queue-filter-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background .12s, color .12s, border-color .12s;
+  position: relative;
+}
+.queue-filter-toggle:hover {
+  background: var(--primary-light);
+  border-color: rgba(37,99,235,.2);
+  color: var(--primary);
+}
+.queue-filter-toggle--open,
+.queue-filter-toggle--active {
+  background: var(--primary-light);
+  border-color: rgba(37,99,235,.3);
+  color: var(--primary);
+}
+
+.queue-filter-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+  flex-shrink: 0;
+}
+
+.queue-filter-reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 0.74rem;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color .12s, background .12s, border-color .12s;
+}
+.queue-filter-reset:hover {
+  color: var(--accent);
+  background: #fef2f2;
+  border-color: var(--accent);
+}
+
+.queue-filter-panel {
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 /* ── Note snippet (inline inside card-meta-row) ───────────────────── */

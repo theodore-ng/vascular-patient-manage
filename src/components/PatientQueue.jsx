@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   DndContext,
   closestCenter,
@@ -12,14 +13,28 @@ import {
   arrayMove,
 } from '@dnd-kit/sortable'
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers'
-import { Users } from 'lucide-react'
+import { Users, SlidersHorizontal, X } from 'lucide-react'
 import PatientCard from './PatientCard'
+import { VASCULAR_GROUPS } from '../services/groq'
+
+const SORT_OPTIONS = [
+  { key: 'queue',     label: 'Queue order'  },
+  { key: 'name-asc',  label: 'Name A → Z'  },
+  { key: 'name-desc', label: 'Name Z → A'  },
+  { key: 'age-asc',   label: 'Age youngest' },
+  { key: 'age-desc',  label: 'Age oldest'   },
+]
+
+const TAG_COLORS = ['red', 'yellow', 'green']
+const TAG_LABELS  = { red: 'Red', yellow: 'Yellow', green: 'Green' }
 
 export default function PatientQueue({
   patients, selectedId, onSelect, onReorder, onDischarge, onDelete,
   onUpdate, onEdit, onTag, onSetGroup, onNote,
-  sortBy, tagFilter, activeGroupFilter,
+  sortBy, onSortChange, tagFilter, onTagFilterChange,
+  activeGroupFilter, onGroupFilterChange,
 }) {
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
     useSensor(TouchSensor,   { activationConstraint: { delay: 200, tolerance: 5 } })
@@ -66,8 +81,93 @@ export default function PatientQueue({
     />
   ))
 
+  const activeGroups = VASCULAR_GROUPS.filter(g => patients.some(p => p.group === g))
+  const hasActiveFilter = sortBy !== 'queue' || tagFilter || activeGroupFilter
+
   return (
     <div className="patient-queue-wrapper">
+      {/* Filter toolbar */}
+      <div className="queue-filter-bar">
+        <button
+          className={`queue-filter-toggle ${filtersOpen ? 'queue-filter-toggle--open' : ''} ${hasActiveFilter ? 'queue-filter-toggle--active' : ''}`}
+          onClick={() => setFiltersOpen(v => !v)}
+          title="Filters"
+        >
+          <SlidersHorizontal size={15} />
+          <span>Filters</span>
+          {hasActiveFilter && <span className="queue-filter-dot" />}
+        </button>
+        {hasActiveFilter && (
+          <button
+            className="queue-filter-reset"
+            onClick={() => { onSortChange('queue'); onTagFilterChange(null); onGroupFilterChange(null) }}
+          >
+            <X size={12} /> Reset
+          </button>
+        )}
+      </div>
+
+      {/* Expandable filter panel */}
+      {filtersOpen && (
+        <div className="queue-filter-panel">
+          <div className="sidebar-filter-section">
+            <span className="sidebar-filter-label">Sort by</span>
+            <div className="sidebar-filter-chips">
+              {SORT_OPTIONS.map(opt => (
+                <button
+                  key={opt.key}
+                  className={`sidebar-filter-chip ${sortBy === opt.key ? 'sidebar-filter-chip--active' : ''}`}
+                  onClick={() => onSortChange(opt.key)}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="sidebar-filter-section">
+            <span className="sidebar-filter-label">Tag</span>
+            <div className="sidebar-filter-chips">
+              <button
+                className={`sidebar-filter-chip ${!tagFilter ? 'sidebar-filter-chip--active' : ''}`}
+                onClick={() => onTagFilterChange(null)}
+              >All</button>
+              {TAG_COLORS.map(c => (
+                <button
+                  key={c}
+                  className={`sidebar-filter-chip sidebar-filter-chip--tag ${tagFilter === c ? 'sidebar-filter-chip--active' : ''}`}
+                  onClick={() => onTagFilterChange(tagFilter === c ? null : c)}
+                >
+                  <span className={`sf-tag-dot sf-tag-dot--${c}`} />
+                  {TAG_LABELS[c]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {activeGroups.length > 0 && (
+            <div className="sidebar-filter-section">
+              <span className="sidebar-filter-label">Group</span>
+              <div className="sidebar-filter-chips">
+                <button
+                  className={`sidebar-filter-chip ${!activeGroupFilter ? 'sidebar-filter-chip--active' : ''}`}
+                  onClick={() => onGroupFilterChange(null)}
+                >All</button>
+                {activeGroups.map(g => (
+                  <button
+                    key={g}
+                    className={`sidebar-filter-chip ${activeGroupFilter === g ? 'sidebar-filter-chip--active' : ''}`}
+                    onClick={() => onGroupFilterChange(activeGroupFilter === g ? null : g)}
+                  >
+                    {g}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {display.length === 0 && (
         <div className="queue-empty glass-panel">
           <Users size={48} strokeWidth={1} />
