@@ -86,37 +86,43 @@ export default function PatientQueue({
 
   return (
     <div className="patient-queue-wrapper">
-      {/* Sort + tag filter toolbar */}
-      <div className="queue-toolbar">
-        <div className="queue-sort-row">
-          {SORT_OPTIONS.map(opt => (
-            <button
-              key={opt.key}
-              className={`queue-sort-btn ${sortBy === opt.key ? 'queue-sort-btn--active' : ''}`}
-              onClick={() => setSortBy(opt.key)}
-            >
-              {opt.label}
-            </button>
-          ))}
+      {/* Sort + tag filter panel */}
+      <div className="queue-filter-panel">
+        <div className="queue-filter-section">
+          <span className="queue-filter-label">Sort by</span>
+          <div className="queue-filter-chips">
+            {SORT_OPTIONS.map(opt => (
+              <button
+                key={opt.key}
+                className={`queue-filter-chip ${sortBy === opt.key ? 'queue-filter-chip--active' : ''}`}
+                onClick={() => setSortBy(opt.key)}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="queue-tag-filter">
-          <button
-            className={`queue-tag-btn ${!tagFilter ? 'queue-tag-btn--active' : ''}`}
-            onClick={() => setTagFilter(null)}
-            title="All tags"
-          >
-            All
-          </button>
-          {TAG_COLORS.map(c => (
+        <div className="queue-filter-divider" />
+        <div className="queue-filter-section">
+          <span className="queue-filter-label">Tag</span>
+          <div className="queue-filter-chips">
             <button
-              key={c}
-              className={`queue-tag-btn queue-tag-btn--dot ${tagFilter === c ? 'queue-tag-btn--active' : ''}`}
-              onClick={() => setTagFilter(tagFilter === c ? null : c)}
-              title={c}
+              className={`queue-filter-chip ${!tagFilter ? 'queue-filter-chip--active' : ''}`}
+              onClick={() => setTagFilter(null)}
             >
-              <span className={`queue-tag-dot queue-tag-dot--${c}`} />
+              All
             </button>
-          ))}
+            {TAG_COLORS.map(c => (
+              <button
+                key={c}
+                className={`queue-filter-chip queue-filter-chip--tag ${tagFilter === c ? 'queue-filter-chip--active' : ''}`}
+                onClick={() => setTagFilter(tagFilter === c ? null : c)}
+              >
+                <span className={`queue-tag-dot queue-tag-dot--${c}`} />
+                {c.charAt(0).toUpperCase() + c.slice(1)}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
