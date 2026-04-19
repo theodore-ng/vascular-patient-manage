@@ -208,15 +208,6 @@ body {
   color: #fff;
 }
 
-.sf-tag-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.sf-tag-dot--red    { background: #ef4444; }
-.sf-tag-dot--yellow { background: #f59e0b; }
-.sf-tag-dot--green  { background: #10b981; }
 
 .sidebar-filter-reset {
   display: inline-flex;
@@ -1686,53 +1677,6 @@ body {
   }
 }
 
-/* ── Tag dot on card ──────────────────────────────────────────────── */
-.card-tag-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  margin-left: auto;
-}
-.card-tag-dot--red    { background: #ef4444; }
-.card-tag-dot--yellow { background: #eab308; }
-.card-tag-dot--green  { background: #10b981; }
-
-/* ── Tag left border on card ─────────────────────────────────────── */
-.patient-card--tag-red    { border-left: 3px solid #ef4444; }
-.patient-card--tag-yellow { border-left: 3px solid #eab308; }
-.patient-card--tag-green  { border-left: 3px solid #10b981; }
-
-/* ── Inline tag color picker ─────────────────────────────────────── */
-.card-tag-picker {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 8px;
-  padding: 8px 10px;
-  background: #f8fafc;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-}
-.tag-pick-dot {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  border: 2px solid transparent;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform .12s, border-color .12s;
-  flex-shrink: 0;
-}
-.tag-pick-dot:hover { transform: scale(1.15); }
-.tag-pick-dot--red    { background: #ef4444; }
-.tag-pick-dot--yellow { background: #eab308; }
-.tag-pick-dot--green  { background: #10b981; }
-.tag-pick-dot--clear  { background: #f1f5f9; border-color: var(--border-strong); color: var(--text-muted); }
-.tag-pick-dot--active { border-color: var(--text-primary); transform: scale(1.15); }
-
 /* ── Group badge on card ──────────────────────────────────────────── */
 .card-group-badge {
   display: inline-flex;
@@ -1744,7 +1688,6 @@ body {
   font-size: 0.62rem;
   font-weight: 600;
   padding: 1px 7px;
-  margin-left: 6px;
   vertical-align: middle;
   letter-spacing: .02em;
 }
