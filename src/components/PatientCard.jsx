@@ -142,17 +142,26 @@ export default function PatientCard({
         style={cardStyle}
         onClick={() => { if (openSide) { close(); return } onSelect(patient) }}
       >
-        {/* Note button — left side */}
-        <button
-          className={`card-left-note-btn ${noteOpen ? 'card-left-note-btn--active' : ''}`}
-          onClick={e => { e.stopPropagation(); setNoteOpen(v => !v); if (!noteOpen) setNoteText(patient.note || '') }}
-          title="Add / edit note"
-        >
-          <FileText size={16} />
-        </button>
-
-        {/* Queue badge — drag handle */}
-        <div className="queue-badge" {...listeners} style={{ touchAction: 'none', cursor: 'grab' }}>{index + 1}</div>
+        {/* Left column: note btn + badge + expand toggle */}
+        <div className="card-left-col">
+          <button
+            className={`card-left-note-btn ${noteOpen ? 'card-left-note-btn--active' : ''}`}
+            onClick={e => { e.stopPropagation(); setNoteOpen(v => !v); if (!noteOpen) setNoteText(patient.note || '') }}
+            title="Add / edit note"
+          >
+            <FileText size={15} />
+          </button>
+          <div className="card-badge-expand">
+            <div className="queue-badge" {...listeners} style={{ touchAction: 'none', cursor: 'grab' }}>{index + 1}</div>
+            <button
+              className={`card-expand-btn ${expanded ? 'card-expand-btn--open' : ''}`}
+              onClick={toggleExpand}
+              title={expanded ? 'Collapse' : 'Show details'}
+            >
+              {expanded ? <Minus size={9} /> : <Plus size={9} />}
+            </button>
+          </div>
+        </div>
 
         {/* Card content */}
         <div className="card-body">
@@ -191,10 +200,6 @@ export default function PatientCard({
               </button>
             )}
 
-            {/* Expand — circle, right end */}
-            <button className={`card-expand-btn ${expanded ? 'card-expand-btn--open' : ''}`} onClick={toggleExpand} title={expanded ? 'Collapse' : 'Show details'}>
-              {expanded ? <Minus size={13} /> : <Plus size={13} />}
-            </button>
           </div>
 
           {/* Meta row: tag · group · note — only shown when at least one exists */}

@@ -686,34 +686,47 @@ body {
   line-height: 1.45;
 }
 
-/* ── Card expand button (circle, right end of top row) ─────────── */
-.card-expand-btn {
+/* ── Card left column (note btn + badge + expand toggle) ─────────── */
+.card-left-col {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 4px;
   flex-shrink: 0;
+}
+
+.card-badge-expand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ── Card expand button (small grey, below badge) ───────────────── */
+.card-expand-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: var(--primary);
-  border: none;
-  color: #fff;
+  width: 22px;
+  height: 14px;
+  border-radius: 4px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
   cursor: pointer;
   padding: 0;
-  margin-left: auto;
-  transition: background .12s, transform .15s;
+  transition: background .12s, color .12s, border-color .12s;
 }
 
 .card-expand-btn:hover {
-  background: var(--primary-hover);
-  transform: scale(1.08);
+  background: var(--bg);
+  color: var(--text-secondary);
+  border-color: var(--border-strong);
 }
 
 .card-expand-btn--open {
-  background: var(--text-secondary);
-}
-.card-expand-btn--open:hover {
-  background: var(--text-primary);
+  color: var(--text-secondary);
+  border-color: var(--border-strong);
 }
 
 /* ── Card meta row (tag · group · note indicators) ──────────────── */
@@ -1674,12 +1687,16 @@ body {
     flex-direction: row;
     gap: 0;
     width: 100%;
+    align-items: stretch;
   }
+  /* NAV_ITEMS are wrapped in <div> — make those flex: 1 too */
+  .sidebar-nav > div { flex: 1; min-width: 0; }
   .sidebar-nav-item {
     flex: 1;
     justify-content: center;
     padding: 8px 4px;
     border-radius: 8px;
+    width: 100%;
   }
   .sidebar-nav-item span { display: none; }
 
